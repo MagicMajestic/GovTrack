@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GovTracker2 - Discord Curator Management</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    borderRadius: {
+                        'xl': '0.75rem',
+                        '2xl': '1rem',
+                        '3xl': '1.5rem',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-subtle': 'bounceSubtle 0.6s ease-in-out',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/app.css">
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes bounceSubtle {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-crown text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-white">GovTracker2</h1>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="#" onclick="showSection('dashboard')" class="nav-link border-blue-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                        </a>
+                        <a href="#" onclick="showSection('curators')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-users mr-2"></i>Curators
+                        </a>
+                        <a href="#" onclick="showSection('activities')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-activity mr-2"></i>Activities
+                        </a>
+                        <a href="#" onclick="showSection('servers')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-server mr-2"></i>Servers
+                        </a>
+                        <a href="#" onclick="showSection('reports')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-file-alt mr-2"></i>Reports
+                        </a>
+                        <a href="#" onclick="showSection('settings')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-cog mr-2"></i>Settings
+                        </a>
+                        <a href="#" onclick="showSection('backup')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            <i class="fas fa-database mr-2"></i>Backup
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:inline"></i>
+                    </button>
+                    <button onclick="refreshData()" class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section-content">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h2>
+                    <p class="text-gray-600 dark:text-gray-400">Overview of curator activities and system performance</p>
+                </div>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-users text-blue-600 dark:text-blue-300 text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Curators</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-curators">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-server text-green-600 dark:text-green-300 text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Servers</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="active-servers">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-chart-line text-purple-600 dark:text-purple-300 text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Activities</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-activities">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700">
+                        <div class="p-6">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-clock text-yellow-600 dark:text-yellow-300 text-xl"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Response</p>
+                                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="avg-response">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Activities</h3>
+                        <canvas id="daily-chart" width="400" height="200"></canvas>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Curators</h3>
+                        <div id="top-curators-list" class="space-y-3">
+                            <!-- Top curators will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activities -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Activities</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="recent-activities" class="space-y-4">
+                            <!-- Recent activities will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Curators Section -->
+        <div id="curators-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Curators Management</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Manage Discord curators and track their performance</p>
+                    </div>
+                    <button onclick="showAddCuratorModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Curator</span>
+                    </button>
+                </div>
+
+                <!-- Curators Grid -->
+                <div id="curators-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Curators will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Activities Section -->
+        <div id="activities-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Activities</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Track curator activities and performance metrics</p>
+                    </div>
+                    <button onclick="showAddActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Log Activity</span>
+                    </button>
+                </div>
+                <div id="activities-grid" class="space-y-6">
+                    <!-- Activities will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Servers Section -->
+        <div id="servers-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Discord Servers</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Manage monitored Discord servers</p>
+                    </div>
+                    <button onclick="showAddServerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Server</span>
+                    </button>
+                </div>
+                <div id="servers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Servers will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Reports Section -->
+        <div id="reports-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Task Reports</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Manage and review task completion reports</p>
+                    </div>
+                    <button onclick="showAddReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-plus"></i>
+                        <span>New Report</span>
+                    </button>
+                </div>
+                <div id="reports-grid" class="space-y-6">
+                    <!-- Reports will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Settings</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-robot mr-2 text-blue-600"></i>Discord Bot Settings
+                        </h3>
+                        <div id="bot-settings">
+                            <!-- Bot settings will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-star mr-2 text-yellow-600"></i>Rating System
+                        </h3>
+                        <div id="rating-settings">
+                            <!-- Rating settings will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup Section -->
+        <div id="backup-section" class="section-content hidden">
+            <div class="px-4 py-6 sm:px-0">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Backup & Restore</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Manage database backups and restoration</p>
+                    </div>
+                    <button onclick="createBackup()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-download"></i>
+                        <span>Create Backup</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Backups</h3>
+                        <div id="backup-list">
+                            <!-- Backup list will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Backup Settings</h3>
+                        <div id="backup-settings">
+                            <!-- Backup settings will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                <span class="text-gray-900 dark:text-white">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modals-container">
+        <!-- Add Curator Modal -->
+        <div id="addCuratorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Add New Curator</h3>
+                    <button onclick="hideAddCuratorModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="addCuratorForm" onsubmit="submitAddCurator(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Discord ID *</label>
+                            <input type="text" id="curatorDiscordId" required 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                   placeholder="123456789012345678">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
+                            <input type="text" id="curatorName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                   placeholder="Curator Name">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Curator Type</label>
+                            <select id="curatorType" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="">Select Type</option>
+                                <option value="senior">Senior Curator</option>
+                                <option value="curator">Curator</option>
+                                <option value="junior">Junior Curator</option>
+                                <option value="moderator">Moderator</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subdivision</label>
+                            <input type="text" id="curatorSubdivision" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                   placeholder="e.g., Help Desk, Events, etc.">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Factions</label>
+                            <input type="text" id="curatorFactions" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                   placeholder="Comma-separated factions">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter factions separated by commas</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="hideAddCuratorModal()" 
+                                class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Add Curator
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/curators.js"></script>
+    <script src="/static/js/activities.js"></script>
+    <script src="/static/js/servers.js"></script>
+    <script src="/static/js/reports.js"></script>
+    <script src="/static/js/settings.js"></script>
+    <script src="/static/js/backup.js"></script>
+    
+    <!-- CSS for modals -->
+    <style>
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+        }
+        
+        .rating-excellent { color: #16a34a; }
+        .rating-good { color: #3b82f6; }
+        .rating-normal { color: #eab308; }
+        .rating-poor { color: #f97316; }
+        .rating-terrible { color: #dc2626; }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        .toast.success { background-color: #16a34a; }
+        .toast.error { background-color: #dc2626; }
+        .toast.warning { background-color: #f59e0b; }
+        .toast.info { background-color: #3b82f6; }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+    
+    <!-- GovTracker2 Python Migration by Replit Agent -->
+</body>
+</html>

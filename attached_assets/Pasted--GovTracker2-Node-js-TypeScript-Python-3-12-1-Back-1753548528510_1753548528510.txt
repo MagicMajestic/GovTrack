@@ -1,0 +1,143 @@
+Задача:
+Полностью переписать GovTracker2 (Node.js + TypeScript) на Python 3.12.
+Требования:
+
+1. Backend
+Использовать Flask как основной веб-фреймворк.
+
+Подключить SQLAlchemy для работы с БД.
+
+Поддержка PostgreSQL в разработке и 100% совместимость с MySQL:
+
+AUTO_INCREMENT вместо SERIAL
+
+VARCHAR вместо TEXT (где возможно)
+
+ENUM заменить на CHECK или текстовые константы
+
+DATETIME вместо TIMESTAMP
+
+JSON поля совместимые с MySQL 5.7+
+
+API endpoints должны полностью повторять структуру и JSON-ответы оригинала.
+
+2. Discord Bot
+Использовать discord.py вместо discord.js.
+
+Поддержка мониторинга до 8 Discord серверов.
+
+Функциональность:
+
+Логирование сообщений, реакций, ответов.
+
+Подсчёт времени ответа куратора на запросы ("help", "помощь", "curator", "куратор").
+
+Начисление очков за активности: message (3), reaction (1), reply (2), task_verification (5).
+
+Уведомления по ролям.
+
+Все события должны сохраняться в БД и быть видны на панели.
+
+3. База данных
+Таблицы (MySQL-ready):
+
+curators: id (AUTO_INCREMENT), discord_id (VARCHAR), name (VARCHAR), factions (JSON), curator_type (VARCHAR), subdivision (VARCHAR)
+
+discord_servers: id (AUTO_INCREMENT), server_id (VARCHAR), name (VARCHAR), role_tag_id (VARCHAR), is_active (BOOLEAN)
+
+activities: id (AUTO_INCREMENT), curator_id (INT), server_id (INT), type (VARCHAR), content (TEXT), timestamp (DATETIME)
+
+response_tracking: id (AUTO_INCREMENT), mention_timestamp (DATETIME), response_timestamp (DATETIME), response_time_seconds (INT)
+
+task_reports: id (AUTO_INCREMENT), author_id (VARCHAR), task_count (INT), approved_tasks (INT), status (VARCHAR)
+
+users: id (AUTO_INCREMENT), username (VARCHAR), password (VARCHAR)
+
+4. Разделы и API
+Dashboard
+
+GET /api/dashboard/stats – сводная статистика (totalCurators, activeServers, totalActivities, averageResponseTime, topCurators[], dailyStats[], recentActivities[]).
+
+Curators
+
+GET /api/curators – список кураторов.
+
+GET /api/curators/<id>/stats – подробная статистика.
+
+POST /api/curators, PUT /api/curators/<id>, DELETE /api/curators/<id>.
+
+Activities
+
+GET /api/activities/recent – последние активности.
+
+GET /api/activities/daily – дневная статистика.
+
+POST /api/activities.
+
+Servers
+
+GET /api/servers, POST /api/servers, PUT /api/servers/<id>, DELETE /api/servers/<id>.
+
+Task Reports
+
+GET /api/task-reports, POST /api/task-reports, PUT /api/task-reports/<id>, DELETE /api/task-reports/<id>.
+
+Settings
+
+GET /api/settings, PUT /api/settings.
+
+Backup/Restore
+
+POST /api/backup – создать бэкап.
+
+POST /api/restore – восстановить.
+
+5. Рейтинговая система
+Баллы: message (3), reaction (1), reply (2), task_verification (5).
+
+Итоговые уровни:
+
+Великолепно (50+), Хорошо (35+), Нормально (20+), Плохо (10+), Ужасно (<10).
+
+Расчёт среднего времени ответа: good ≤ 60 сек, poor ≥ 300 сек.
+
+6. Frontend
+Использовать React build из оригинального проекта (без изменения структуры).
+
+UI оформить в стиле iOS (Tailwind CSS, плавные анимации, скруглённые углы, тёмная/светлая темы).
+
+Добавить все разделы: Dashboard, Curators, Activities, Servers, Task Reports, Settings, Backup.
+
+Должна быть чистая, лаконичная, современная панель управления.
+
+7. Планировщик и бэкапы
+Использовать APScheduler для фоновых задач (например, автоматический бэкап).
+
+backup_service для экспорта и импорта данных.
+
+8. Документация
+MIGRATION_NOTES.md – различия Node → Python.
+
+MySQL_COMPATIBILITY.md – как переключить на MySQL.
+
+PROJECT_IDENTIFICATION.md – маркеры проекта.
+
+README.md – описание сборки и запуска.
+
+9. Комментарии
+В коде добавить маркер:
+
+bash
+Copy
+Edit
+# GovTracker2 Python Migration by Replit Agent
+Ожидаемый результат
+Полностью рабочее Python 3.12 + Flask + React приложение.
+
+Discord bot на discord.py с полным функционалом.
+
+БД PostgreSQL (в dev), совместимая с MySQL (в prod).
+
+Красивый iOS-стиль интерфейса.
+
+Вся бизнес-логика и формулы сохранены.

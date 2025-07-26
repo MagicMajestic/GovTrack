@@ -1,0 +1,238 @@
+Задача
+Полностью переписать GovTracker2 (Node.js + TypeScript) на Python 3.12.
+Сохранить все функции, алгоритмы, расчёты, API и данные.
+Использовать Flask для backend и discord.py для бота.
+База данных: PostgreSQL (dev) с полной совместимостью с MySQL (prod).
+
+Требования
+1. Архитектура
+Создать структуру проекта:
+
+csharp
+Copy
+Edit
+govtracker2-python/
+├── app.py                # Flask запуск
+├── config.py             # конфигурация (Postgres/MySQL switch)
+├── database.py           # SQLAlchemy init
+├── models/               # SQLAlchemy модели
+│   ├── curator.py
+│   ├── activity.py
+│   ├── discord_server.py
+│   ├── response_tracking.py
+│   ├── task_report.py
+│   └── user.py
+├── routes/               # API endpoints
+│   ├── dashboard.py
+│   ├── curators.py
+│   ├── activities.py
+│   ├── servers.py
+│   ├── task_reports.py
+│   ├── settings.py
+│   └── backup.py
+├── discord_bot/          # Discord бот
+│   ├── bot.py
+│   ├── monitoring.py
+│   └── notifications.py
+├── utils/                # утилиты
+│   ├── rating.py
+│   ├── response_time.py
+│   └── backup_service.py
+├── scheduler.py          # APScheduler задачи
+├── static/               # React build (iOS-style UI)
+│   └── ...
+├── migrations/           # Alembic миграции
+├── MIGRATION_NOTES.md
+├── MySQL_COMPATIBILITY.md
+├── PROJECT_IDENTIFICATION.md
+└── README.md
+2. Backend
+Flask (Blueprints для каждого модуля).
+
+SQLAlchemy + Alembic.
+
+Поддержка DATABASE_URL с переключателем postgresql ↔ mysql+pymysql.
+
+Использовать MySQL-friendly типы:
+
+AUTO_INCREMENT вместо SERIAL
+
+VARCHAR вместо TEXT (где возможно)
+
+DATETIME вместо TIMESTAMP
+
+ENUM заменить на CHECK или VARCHAR
+
+JSON поля совместимые с MySQL 5.7+
+
+Все API endpoints должны возвращать точно такие же JSON, как в оригинальном проекте.
+
+3. Discord Bot
+Использовать discord.py.
+
+Поддержка мониторинга до 8 серверов.
+
+Отслеживание:
+
+Сообщений
+
+Реакций
+
+Ответов (reply)
+
+Упоминаний ключевых слов: "куратор", "curator", "help", "помощь".
+
+Создание записей в response_tracking (время ответа).
+
+Уведомления по ролям.
+
+Поддержка расчёта баллов:
+
+message = 3
+
+reaction = 1
+
+reply = 2
+
+task_verification = 5
+
+4. API (7 модулей)
+Dashboard
+
+GET /api/dashboard/stats
+
+Curators
+
+GET /api/curators
+
+GET /api/curators/<id>/stats
+
+POST /api/curators
+
+PUT /api/curators/<id>
+
+DELETE /api/curators/<id>
+
+Activities
+
+GET /api/activities/recent
+
+GET /api/activities/daily
+
+POST /api/activities
+
+Servers
+
+GET /api/servers
+
+POST /api/servers
+
+PUT /api/servers/<id>
+
+DELETE /api/servers/<id>
+
+Task Reports
+
+GET /api/task-reports
+
+POST /api/task-reports
+
+PUT /api/task-reports/<id>
+
+DELETE /api/task-reports/<id>
+
+Settings
+
+GET /api/settings
+
+PUT /api/settings
+
+Backup/Restore
+
+POST /api/backup
+
+POST /api/restore
+
+5. Рейтинги и формулы
+Баллы:
+
+message (3), reaction (1), reply (2), task_verification (5)
+
+Итоговые уровни:
+
+Великолепно (50+)
+
+Хорошо (35+)
+
+Нормально (20+)
+
+Плохо (10+)
+
+Ужасно (<10)
+
+Response time: good ≤ 60 сек, poor ≥ 300 сек.
+
+6. Frontend
+Использовать React build (оригинальная структура).
+
+Обновить UI в iOS стиле:
+
+Tailwind CSS
+
+Скруглённые углы
+
+Плавные анимации
+
+Поддержка светлой и тёмной темы
+
+Разделы интерфейса:
+
+Dashboard
+
+Curators
+
+Activities
+
+Servers
+
+Task Reports
+
+Settings
+
+Backup
+
+7. Планировщик и бэкапы
+Использовать APScheduler:
+
+Автоматические бэкапы
+
+backup_service.py:
+
+Экспорт и импорт данных
+
+8. Документация
+MIGRATION_NOTES.md – различия Node → Python
+
+MySQL_COMPATIBILITY.md – переключение на MySQL
+
+PROJECT_IDENTIFICATION.md – маркеры проекта
+
+README.md – запуск и деплой
+
+9. Комментарии в коде
+В каждом файле:
+
+python
+Copy
+Edit
+# GovTracker2 Python Migration by Replit Agent
+Ожидаемый результат
+Полностью рабочее Python 3.12 + Flask + React приложение.
+
+Discord бот на discord.py.
+
+PostgreSQL (dev) с полной готовностью к MySQL (prod).
+
+Красивый iOS-стиль UI.
+
+Вся логика и формулы сохранены.

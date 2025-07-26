@@ -1,0 +1,181 @@
+Задача:
+Переписать приложение GovTracker2 (Node.js + TypeScript) на Python 3.12 с сохранением всей функциональности и архитектуры.
+
+Ключевые требования:
+
+Backend: Python 3.12 + Flask
+
+Frontend: React (оставить как есть, использовать static build)
+
+Discord Bot: Переписать логику с discord.js на discord.py
+
+База данных: использовать PostgreSQL для разработки, но со 100% совместимостью с MySQL:
+
+AUTO_INCREMENT вместо SERIAL
+
+VARCHAR вместо TEXT (где возможно)
+
+ENUM как CHECK или текстовые константы
+
+DATETIME вместо TIMESTAMP
+
+JSON поля с учётом совместимости MySQL 5.7+
+
+API: сохранить все REST endpoints и их схемы ответов (JSON формат полностью идентичен оригиналу).
+
+Разделы приложения:
+
+Dashboard (общая статистика)
+
+Curators (управление кураторами и их активностью)
+
+Activities (все активности, фильтрация по серверам и типам)
+
+Servers (управление серверами Discord)
+
+Task Reports (отчёты о задачах, CRUD)
+
+Settings (общие настройки)
+
+Backup/Restore (резервное копирование и восстановление данных)
+
+UI: использовать современный дизайн в стиле iOS (Tailwind CSS, скруглённые углы, плавные анимации, тёмная/светлая темы).
+
+Документация: добавить:
+
+MIGRATION_NOTES.md (описание процесса миграции и различий в технологиях)
+
+MySQL_COMPATIBILITY.md (как переключить проект на MySQL)
+
+Комментарии в коде: добавить маркер:
+
+bash
+Copy
+Edit
+# GovTracker2 Python Migration by Replit Agent
+чтобы можно было легко определить проект.
+
+Структура проекта (Python)
+bash
+Copy
+Edit
+govtracker2-python/
+├── app.py                 # Flask приложение
+├── main.py                # Точка запуска (Gunicorn / Replit)
+├── config.py              # Конфигурация (PostgreSQL + MySQL-ready)
+├── database.py            # Подключение SQLAlchemy
+├── models/                # SQLAlchemy модели
+│   ├── __init__.py
+│   ├── curator.py
+│   ├── activity.py
+│   ├── discord_server.py
+│   ├── response_tracking.py
+│   └── task_report.py
+├── routes/                # Flask маршруты
+│   ├── __init__.py
+│   ├── dashboard.py
+│   ├── curators.py
+│   ├── activities.py
+│   ├── servers.py
+│   ├── task_reports.py
+│   ├── settings.py
+│   └── backup.py
+├── discord_bot/           # Логика Discord-бота
+│   ├── __init__.py
+│   ├── bot.py
+│   ├── monitoring.py
+│   └── notifications.py
+├── utils/                 # Утилиты
+│   ├── __init__.py
+│   ├── rating.py          # Система рейтингов
+│   ├── backup_service.py  # Резервное копирование
+│   └── scheduler.py       # Планировщик APScheduler
+├── static/                # React build
+│   ├── index.html
+│   └── assets/...
+├── migrations/            # Alembic миграции
+├── tests/                 # Pytest тесты для API и бота
+├── requirements.txt
+├── MIGRATION_NOTES.md
+├── MySQL_COMPATIBILITY.md
+├── PROJECT_IDENTIFICATION.md
+└── README.md
+Функциональность (детально)
+1. Dashboard API
+GET /api/dashboard/stats
+Возвращает: общее количество кураторов, серверов, активностей, среднее время ответа, топ кураторов, дневную статистику, последние активности.
+
+2. Curators API
+GET /api/curators → список кураторов (id, discord_id, name, factions, curator_type, subdivision).
+
+GET /api/curators/<id>/stats → статистика одного куратора.
+
+POST /api/curators → создание нового куратора.
+
+PUT /api/curators/<id> → обновление данных.
+
+DELETE /api/curators/<id> → удаление.
+
+3. Activities API
+GET /api/activities/recent → последние активности.
+
+GET /api/activities/daily → статистика активности за день (для графиков).
+
+POST /api/activities → добавление активности.
+
+4. Servers API
+GET /api/servers → список серверов.
+
+POST /api/servers → добавление сервера.
+
+PUT /api/servers/<id> → обновление сервера.
+
+DELETE /api/servers/<id> → удаление.
+
+5. Task Reports API
+GET /api/task-reports → список отчётов.
+
+POST /api/task-reports → новый отчёт.
+
+PUT /api/task-reports/<id> → редактирование отчёта.
+
+DELETE /api/task-reports/<id> → удаление отчёта.
+
+6. Settings API
+GET /api/settings → получение настроек.
+
+PUT /api/settings → обновление настроек.
+
+7. Backup API
+POST /api/backup → создать резервную копию.
+
+POST /api/restore → восстановить из резервной копии.
+
+8. Discord Bot
+Мониторинг сообщений, реакций, упоминаний.
+
+Расчёт времени ответа: разница между сообщением "help/помощь" и ответом куратора.
+
+Запись активности в БД.
+
+Система уведомлений по ролям.
+
+Поддержка 8 серверов одновременно.
+
+UI (React)
+Использовать Tailwind CSS для iOS-стиля.
+
+Разделы: Dashboard, Curators, Activities, Servers, Task Reports, Settings, Backup.
+
+Тёмная и светлая тема, плавные анимации.
+
+Результат
+Полностью функциональное приложение на Python 3.12.
+
+Совместимая с MySQL база данных.
+
+Встроенный React UI.
+
+Discord bot на discord.py.
+
+Полная документация.

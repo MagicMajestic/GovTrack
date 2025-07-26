@@ -1,0 +1,89 @@
+<!-- GovTracker2 Python Migration by Replit Agent -->
+<!-- Curators Section -->
+<div id="curators-section" class="section-content hidden">
+    <div class="px-4 py-6 sm:px-0">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Curators Management</h2>
+                <p class="text-gray-600 dark:text-gray-400">Manage Discord curators and track their performance</p>
+            </div>
+            <button onclick="showAddCuratorModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                <i class="fas fa-plus"></i>
+                <span>Add Curator</span>
+            </button>
+        </div>
+
+        <!-- Curators Grid -->
+        <div id="curators-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Curators will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Curator Modal -->
+<div id="addCuratorModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Add New Curator</h3>
+            <button onclick="hideAddCuratorModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="addCuratorForm" onsubmit="submitAddCurator(event)">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Discord ID *</label>
+                    <input type="text" id="curatorDiscordId" required 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="123456789012345678">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name *</label>
+                    <input type="text" id="curatorName" required 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Curator Name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Curator Type</label>
+                    <select id="curatorType" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select Type</option>
+                        <option value="senior">Senior Curator</option>
+                        <option value="curator">Curator</option>
+                        <option value="junior">Junior Curator</option>
+                        <option value="moderator">Moderator</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subdivision</label>
+                    <input type="text" id="curatorSubdivision" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="e.g., Help Desk, Events, etc.">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Factions</label>
+                    <input type="text" id="curatorFactions" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Comma-separated factions">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter factions separated by commas</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="hideAddCuratorModal()" 
+                        class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    Add Curator
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
