@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from database import db
+from app import db
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from datetime import datetime
 
@@ -12,7 +12,11 @@ class DiscordServer(db.Model):
     # Discord server details
     server_id = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
-    role_tag_id = Column(String(255), nullable=True)  # Role ID for notifications
+    
+    # Curator and notification settings
+    curator_role_id = Column(String(255), nullable=True)  # ID роли куратора
+    notification_channel_id = Column(String(255), nullable=True)  # Канал для уведомлений
+    tasks_channel_id = Column(String(255), nullable=True)  # Канал с тасками
     
     # Server status
     is_active = Column(Boolean, default=True, index=True)
@@ -33,12 +37,58 @@ class DiscordServer(db.Model):
             'id': self.id,
             'server_id': self.server_id,
             'name': self.name,
-            'role_tag_id': self.role_tag_id,
+            'curator_role_id': self.curator_role_id,
+            'notification_channel_id': self.notification_channel_id,
+            'tasks_channel_id': self.tasks_channel_id,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'activity_count': self.get_activity_count()
+            'activity_count': self.get_activity_count(),
+            'curator_count': self.get_curator_count(),
+            'avg_response_time': self.get_average_response_time(),
+            'reactions_count': self.get_reactions_count()
         }
+
+    def get_curator_count(self):
+        """Get number of curators assigned to this server"""
+        try:
+            from models.curator import Curator
+            return Curator.query.filter(Curator.assigned_servers.any(id=self.id)).count()
+        except:
+            return 0
+
+    def get_average_response_time(self, days=30):
+        """Get average response time for this server"""
+        try:
+            from models.response_tracking import ResponseTracking
+            from sqlalchemy import func
+            from datetime import datetime, timedelta
+            
+            since = datetime.utcnow() - timedelta(days=days)
+            result = db.session.query(func.avg(ResponseTracking.response_time)).filter(
+                ResponseTracking.server_id == self.id,
+                ResponseTracking.created_at >= since,
+                ResponseTracking.response_time.isnot(None)
+            ).scalar()
+            
+            return int(result) if result else 0
+        except:
+            return 0
+
+    def get_reactions_count(self, days=30):
+        """Get total reactions count for this server"""
+        try:
+            from models.activity import Activity
+            from datetime import datetime, timedelta
+            
+            since = datetime.utcnow() - timedelta(days=days)
+            return Activity.query.filter(
+                Activity.server_id == self.id,
+                Activity.activity_type == 'reaction',
+                Activity.created_at >= since
+            ).count()
+        except:
+            return 0
     
     def get_activity_count(self, days=30):
         """Get activity count for this server"""

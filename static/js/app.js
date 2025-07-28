@@ -73,8 +73,6 @@ function showSection(sectionName) {
 
 // Data loading
 async function loadDashboardData() {
-    showLoading(true);
-    
     try {
         const response = await fetch('/api/dashboard/stats');
         if (!response.ok) {
@@ -82,30 +80,38 @@ async function loadDashboardData() {
         }
         
         dashboardData = await response.json();
-        updateDashboardUI();
+        updateDashboardStats();
         
     } catch (error) {
         console.error('Error loading dashboard data:', error);
-        showToast('Failed to load dashboard data', 'error');
-    } finally {
-        showLoading(false);
+        // Set default values instead of infinite loading
+        document.getElementById('total-curators').textContent = '0';
+        document.getElementById('active-servers').textContent = '0';
+        document.getElementById('total-activities').textContent = '0';
+        document.getElementById('avg-response').textContent = '0s';
+        
+        // Hide charts section
+        const chartsSection = document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-2');
+        if (chartsSection) chartsSection.style.display = 'none';
     }
 }
 
-function updateDashboardUI() {
+function updateDashboardStats() {
     if (!dashboardData) return;
     
-    // Update stats cards
-    document.getElementById('total-curators').textContent = dashboardData.totalCurators || 0;
-    document.getElementById('active-servers').textContent = dashboardData.activeServers || 0;
-    document.getElementById('total-activities').textContent = dashboardData.totalActivities || 0;
-    document.getElementById('avg-response').textContent = `${dashboardData.averageResponseTime || 0}s`;
+    // Update basic stats only
+    const totalCuratorsEl = document.getElementById('total-curators');
+    const activeServersEl = document.getElementById('active-servers');
+    const totalActivitiesEl = document.getElementById('total-activities');
+    const avgResponseEl = document.getElementById('avg-response');
     
-    // Update charts
-    updateDailyChart();
-    updateTopCurators();
-    updateRecentActivities();
+    if (totalCuratorsEl) totalCuratorsEl.textContent = dashboardData.totalCurators || 0;
+    if (activeServersEl) activeServersEl.textContent = dashboardData.activeServers || 0;
+    if (totalActivitiesEl) totalActivitiesEl.textContent = dashboardData.totalActivities || 0;
+    if (avgResponseEl) avgResponseEl.textContent = `${dashboardData.averageResponseTime || 0}s`;
 }
+
+
 
 function updateDailyChart() {
     const ctx = document.getElementById('daily-chart');

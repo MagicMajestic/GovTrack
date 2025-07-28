@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from database import db
+from app import db
 from sqlalchemy import Column, Integer, String, JSON, DateTime, Text
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -12,8 +12,8 @@ class Curator(db.Model):
     discord_id = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     
-    # JSON field compatible with MySQL 5.7+
-    factions = Column(JSON, nullable=True)
+    # Server assignments (многие ко многим через JSON)
+    assigned_servers = Column(JSON, nullable=True)  # Список ID серверов
     
     curator_type = Column(String(100), nullable=True)
     subdivision = Column(String(255), nullable=True)
@@ -38,11 +38,12 @@ class Curator(db.Model):
             'id': self.id,
             'discord_id': self.discord_id,
             'name': self.name,
-            'factions': self.factions or [],
+            'assigned_servers': self.assigned_servers or [],
             'curator_type': self.curator_type,
             'subdivision': self.subdivision,
             'total_points': self.total_points,
             'rating_level': self.rating_level,
+            'average_response_time': 0,  # Будет рассчитано в другом месте
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

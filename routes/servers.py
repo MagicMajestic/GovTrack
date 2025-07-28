@@ -39,18 +39,20 @@ def create_server():
         required_fields = ['server_id', 'name']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+                return jsonify({'error': f'Отсутствует обязательное поле: {field}'}), 400
         
         # Check if server with this ID already exists
         existing_server = DiscordServer.find_by_server_id(data['server_id'])
         if existing_server:
-            return jsonify({'error': 'Server with this ID already exists'}), 409
+            return jsonify({'error': 'Сервер с таким ID уже существует'}), 409
         
         # Create new server
         server = DiscordServer()
         server.server_id = str(data['server_id'])
         server.name = data['name']
-        server.role_tag_id = data.get('role_tag_id')
+        server.curator_role_id = data.get('curator_role_id')
+        server.notification_channel_id = data.get('notification_channel_id')
+        server.tasks_channel_id = data.get('tasks_channel_id')
         server.is_active = data.get('is_active', True)
         server.created_at = datetime.utcnow()
         server.updated_at = datetime.utcnow()
@@ -75,8 +77,12 @@ def update_server(server_id):
         # Update fields if provided
         if 'name' in data:
             server.name = data['name']
-        if 'role_tag_id' in data:
-            server.role_tag_id = data['role_tag_id']
+        if 'curator_role_id' in data:
+            server.curator_role_id = data['curator_role_id']
+        if 'notification_channel_id' in data:
+            server.notification_channel_id = data['notification_channel_id']
+        if 'tasks_channel_id' in data:
+            server.tasks_channel_id = data['tasks_channel_id']
         if 'is_active' in data:
             server.is_active = data['is_active']
         
@@ -213,6 +219,51 @@ def get_active_servers():
     except Exception as e:
         logging.error(f"Error getting active servers: {e}")
         return jsonify({'error': 'Failed to fetch active servers'}), 500
+
+@servers_bp.route('/initialize', methods=['POST'])
+def initialize_default_servers():
+    """Initialize default Discord servers (factions)"""
+    try:
+        default_servers = [
+            {'server_id': '916616528395378708', 'name': 'Detectives'},
+            {'server_id': '1329213276587950080', 'name': 'Weazel News'},
+            {'server_id': '1329212940540313644', 'name': 'EMS'},
+            {'server_id': '1329213185579946106', 'name': 'LSCSD'},
+            {'server_id': '1329213239996973116', 'name': 'SANG'},
+            {'server_id': '1329212725921976322', 'name': 'LSPD'},
+            {'server_id': '1329213307059437629', 'name': 'FIB'},
+            {'server_id': '1329213001814773780', 'name': 'Government'},
+        ]
+        
+        created_servers = []
+        for server_data in default_servers:
+            # Check if server already exists
+            existing_server = DiscordServer.find_by_server_id(server_data['server_id'])
+            if existing_server:
+                continue
+                
+            # Create new server
+            server = DiscordServer()
+            server.server_id = server_data['server_id']
+            server.name = server_data['name']
+            server.is_active = True
+            server.created_at = datetime.utcnow()
+            server.updated_at = datetime.utcnow()
+            
+            db.session.add(server)
+            created_servers.append(server_data['name'])
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Инициализировано серверов: {len(created_servers)}',
+            'created_servers': created_servers
+        })
+        
+    except Exception as e:
+        logging.error(f"Error initializing servers: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Ошибка инициализации серверов'}), 500
 
 @servers_bp.route('/<int:server_id>/toggle-status', methods=['POST'])
 def toggle_server_status(server_id):

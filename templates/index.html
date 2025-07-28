@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GovTracker2 - Discord Curator Management</title>
+    <title>GovTracker2 - Система управления кураторами Discord</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -77,25 +77,25 @@
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="#" onclick="showSection('dashboard')" class="nav-link border-blue-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                            <i class="fas fa-chart-line mr-2"></i>Дашборд
                         </a>
                         <a href="#" onclick="showSection('curators')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-users mr-2"></i>Curators
+                            <i class="fas fa-users mr-2"></i>Кураторы
                         </a>
                         <a href="#" onclick="showSection('activities')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-activity mr-2"></i>Activities
+                            <i class="fas fa-chart-bar mr-2"></i>Активность
                         </a>
                         <a href="#" onclick="showSection('servers')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-server mr-2"></i>Servers
+                            <i class="fas fa-server mr-2"></i>Фракции
                         </a>
                         <a href="#" onclick="showSection('reports')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-file-alt mr-2"></i>Reports
+                            <i class="fas fa-file-alt mr-2"></i>Отчеты
                         </a>
                         <a href="#" onclick="showSection('settings')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-cog mr-2"></i>Settings
+                            <i class="fas fa-cog mr-2"></i>Настройки
                         </a>
                         <a href="#" onclick="showSection('backup')" class="nav-link border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            <i class="fas fa-database mr-2"></i>Backup
+                            <i class="fas fa-database mr-2"></i>Резервные копии
                         </a>
                     </div>
                 </div>
@@ -118,8 +118,8 @@
         <div id="dashboard-section" class="section-content">
             <div class="px-4 py-6 sm:px-0">
                 <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Dashboard</h2>
-                    <p class="text-gray-600 dark:text-gray-400">Overview of curator activities and system performance</p>
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Дашборд</h2>
+                    <p class="text-gray-600 dark:text-gray-400">Обзор активности кураторов и производительности системы</p>
                 </div>
                 
                 <!-- Stats Cards -->
@@ -133,7 +133,7 @@
                                     </div>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Curators</p>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Всего кураторов</p>
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-curators">-</p>
                                 </div>
                             </div>
@@ -149,7 +149,7 @@
                                     </div>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Servers</p>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Активных фракций</p>
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white" id="active-servers">-</p>
                                 </div>
                             </div>
@@ -165,7 +165,7 @@
                                     </div>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Activities</p>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Всего активностей</p>
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-activities">-</p>
                                 </div>
                             </div>
@@ -181,7 +181,7 @@
                                     </div>
                                 </div>
                                 <div class="ml-4 flex-1">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Response</p>
+                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Среднее время ответа</p>
                                     <p class="text-2xl font-bold text-gray-900 dark:text-white" id="avg-response">-</p>
                                 </div>
                             </div>
@@ -192,12 +192,12 @@
                 <!-- Charts -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Activities</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Ежедневная активность</h3>
                         <canvas id="daily-chart" width="400" height="200"></canvas>
                     </div>
                     
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Curators</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Топ кураторы</h3>
                         <div id="top-curators-list" class="space-y-3">
                             <!-- Top curators will be populated here -->
                         </div>
@@ -207,7 +207,7 @@
                 <!-- Recent Activities -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Activities</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Последние активности</h3>
                     </div>
                     <div class="p-6">
                         <div id="recent-activities" class="space-y-4">
@@ -223,12 +223,12 @@
             <div class="px-4 py-6 sm:px-0">
                 <div class="flex justify-between items-center mb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Curators Management</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Manage Discord curators and track their performance</p>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Управление кураторами</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Управляйте кураторами Discord и отслеживайте их производительность</p>
                     </div>
                     <button onclick="showAddCuratorModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                         <i class="fas fa-plus"></i>
-                        <span>Add Curator</span>
+                        <span>Добавить куратора</span>
                     </button>
                 </div>
 
@@ -244,12 +244,12 @@
             <div class="px-4 py-6 sm:px-0">
                 <div class="flex justify-between items-center mb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Activities</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Track curator activities and performance metrics</p>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Активность</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Отслеживайте активность кураторов и показатели производительности</p>
                     </div>
                     <button onclick="showAddActivityModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
                         <i class="fas fa-plus"></i>
-                        <span>Log Activity</span>
+                        <span>Записать активность</span>
                     </button>
                 </div>
                 <div id="activities-grid" class="space-y-6">
@@ -263,13 +263,19 @@
             <div class="px-4 py-6 sm:px-0">
                 <div class="flex justify-between items-center mb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Discord Servers</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Manage monitored Discord servers</p>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Фракции Discord</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Управляйте отслеживаемыми серверами Discord</p>
                     </div>
-                    <button onclick="showAddServerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="fas fa-plus"></i>
-                        <span>Add Server</span>
-                    </button>
+                    <div class="flex space-x-3">
+                        <button onclick="initializeDefaultServers()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i class="fas fa-magic"></i>
+                            <span>Инициализировать фракции</span>
+                        </button>
+                        <button onclick="showAddServerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i class="fas fa-plus"></i>
+                            <span>Добавить сервер</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="servers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Servers will be loaded here -->
@@ -282,13 +288,21 @@
             <div class="px-4 py-6 sm:px-0">
                 <div class="flex justify-between items-center mb-8">
                     <div>
-                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Task Reports</h2>
-                        <p class="text-gray-600 dark:text-gray-400">Manage and review task completion reports</p>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Отчёты задач</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Просмотр поступивших отчётов о выполненных задачах</p>
                     </div>
-                    <button onclick="showAddReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="fas fa-plus"></i>
-                        <span>New Report</span>
-                    </button>
+                    <div class="flex space-x-3">
+                        <select id="reports-filter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                            <option value="">Все отчёты</option>
+                            <option value="pending">Ожидающие проверки</option>
+                            <option value="approved">Одобренные</option>
+                            <option value="rejected">Отклонённые</option>
+                        </select>
+                        <button onclick="refreshReports()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Обновить</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="reports-grid" class="space-y-6">
                     <!-- Reports will be loaded here -->
@@ -476,6 +490,98 @@
         }
     </style>
     
+    <!-- Curator Modal -->
+    <div id="curator-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="curator-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Добавить куратора</h3>
+                    <button onclick="closeCuratorModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="curator-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discord ID</label>
+                            <input type="text" id="curator-discord-id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
+                            <input type="text" id="curator-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Назначенные фракции</label>
+                            <div id="server-checkboxes" class="space-y-2 max-h-40 overflow-y-auto">
+                                <!-- Server checkboxes will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeCuratorModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            Отмена
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Modal -->
+    <div id="server-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="server-modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Добавить сервер</h3>
+                    <button onclick="closeServerModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="server-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID сервера</label>
+                            <input type="text" id="server-id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название</label>
+                            <input type="text" id="server-name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID роли куратора</label>
+                            <input type="text" id="curator-role-id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID канала уведомлений</label>
+                            <input type="text" id="notification-channel-id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID канала задач</label>
+                            <input type="text" id="tasks-channel-id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="server-active" class="mr-2" checked>
+                                <span class="text-sm text-gray-700 dark:text-gray-300">Активен</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button type="button" onclick="closeServerModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                            Отмена
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- GovTracker2 Python Migration by Replit Agent -->
 </body>
 </html>

@@ -16,7 +16,30 @@ async function loadServersData() {
         
     } catch (error) {
         console.error('Error loading servers data:', error);
-        showToast('Failed to load servers data', 'error');
+        showToast('Не удалось загрузить данные серверов', 'error');
+    }
+}
+
+// Initialize default faction servers
+async function initializeDefaultServers() {
+    try {
+        const response = await fetch('/api/servers/initialize', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to initialize servers');
+        }
+        
+        const result = await response.json();
+        showToast(result.message, 'success');
+        loadServersData(); // Reload servers list
+    } catch (error) {
+        console.error('Error initializing servers:', error);
+        showToast('Ошибка инициализации серверов', 'error');
     }
 }
 
@@ -31,11 +54,16 @@ function updateServersGrid() {
         grid.innerHTML = `
             <div class="col-span-full text-center py-12">
                 <i class="fas fa-server text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Servers Configured</h3>
-                <p class="text-gray-500 dark:text-gray-400 mb-6">Add Discord servers to start monitoring curator activities</p>
-                <button onclick="showAddServerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
-                    <i class="fas fa-plus mr-2"></i>Add First Server
-                </button>
+                <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">Серверы не настроены</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">Добавьте серверы Discord для начала отслеживания активности кураторов</p>
+                <div class="flex justify-center space-x-4">
+                    <button onclick="initializeDefaultServers()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg">
+                        <i class="fas fa-magic mr-2"></i>Инициализировать фракции
+                    </button>
+                    <button onclick="showAddServerModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Добавить сервер
+                    </button>
+                </div>
             </div>
         `;
         return;
@@ -53,73 +81,139 @@ function createServerCard(server) {
     card.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700';
     
     const statusColor = server.is_active ? 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300' : 'text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-300';
-    const statusText = server.is_active ? 'Active' : 'Inactive';
+    const statusText = server.is_active ? 'Активен' : 'Неактивен';
     
     card.innerHTML = `
         <div class="flex items-start justify-between mb-4">
             <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold">
                     <i class="fab fa-discord"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-gray-900 dark:text-white">${server.name}</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">ID: ${server.server_id}</p>
+                    <h3 class="font-bold text-gray-900 dark:text-white text-sm">${server.name}</h3>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+                        ${statusText}
+                    </span>
                 </div>
             </div>
             <div class="flex space-x-2">
-                <button onclick="editServer(${server.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                <button onclick="editServer(${server.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteServer(${server.id})" class="text-red-600 hover:text-red-800 dark:text-red-400">
+                <button onclick="deleteServer(${server.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
         
-        <div class="space-y-3">
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
-                    ${statusText}
-                </span>
+        <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <div class="text-lg font-bold text-gray-900 dark:text-white">${server.curator_count || 0}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Кураторы</div>
             </div>
-            
-            ${server.role_tag_id ? `
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Role Tag ID</span>
-                    <span class="text-sm text-gray-900 dark:text-white font-mono">${server.role_tag_id}</span>
-                </div>
-            ` : ''}
-            
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Added</span>
-                <span class="text-sm text-gray-900 dark:text-white">${new Date(server.created_at).toLocaleDateString()}</span>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <div class="text-lg font-bold text-gray-900 dark:text-white">${server.activity_count || 0}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Активности</div>
             </div>
-        </div>
-        
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-            <button onclick="viewServerStats(${server.id})" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                <i class="fas fa-chart-bar mr-2"></i>View Statistics
-            </button>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <div class="text-lg font-bold text-gray-900 dark:text-white">${server.avg_response_time || 0}s</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Время ответа</div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                <div class="text-lg font-bold text-gray-900 dark:text-white">${server.reactions_count || 0}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Реакции</div>
+            </div>
         </div>
     `;
     
     return card;
 }
 
+// Global variables for modal state
+let currentEditingServerId = null;
+
 // Show add server modal
 function showAddServerModal() {
-    showToast('Server management coming soon', 'info');
+    currentEditingServerId = null;
+    document.getElementById('server-modal-title').textContent = 'Добавить сервер';
+    document.getElementById('server-form').reset();
+    document.getElementById('server-modal').classList.remove('hidden');
 }
 
-// Edit server
+// Show edit server modal
 function editServer(serverId) {
-    showToast('Edit functionality coming soon', 'info');
+    const server = serversData.find(s => s.id === serverId);
+    if (!server) return;
+    
+    currentEditingServerId = serverId;
+    document.getElementById('server-modal-title').textContent = 'Редактировать сервер';
+    
+    // Populate form fields
+    document.getElementById('server-id').value = server.server_id;
+    document.getElementById('server-name').value = server.name;
+    document.getElementById('curator-role-id').value = server.curator_role_id || '';
+    document.getElementById('notification-channel-id').value = server.notification_channel_id || '';
+    document.getElementById('tasks-channel-id').value = server.tasks_channel_id || '';
+    document.getElementById('server-active').checked = server.is_active;
+    
+    document.getElementById('server-modal').classList.remove('hidden');
 }
+
+// Close server modal
+function closeServerModal() {
+    document.getElementById('server-modal').classList.add('hidden');
+    currentEditingServerId = null;
+}
+
+// Handle server form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const serverForm = document.getElementById('server-form');
+    if (serverForm) {
+        serverForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        server_id: document.getElementById('server-id').value,
+        name: document.getElementById('server-name').value,
+        curator_role_id: document.getElementById('curator-role-id').value,
+        notification_channel_id: document.getElementById('notification-channel-id').value,
+        tasks_channel_id: document.getElementById('tasks-channel-id').value,
+        is_active: document.getElementById('server-active').checked
+    };
+    
+    try {
+        const url = currentEditingServerId ? `/api/servers/${currentEditingServerId}` : '/api/servers';
+        const method = currentEditingServerId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save server');
+        }
+        
+        const result = await response.json();
+        showToast(currentEditingServerId ? 'Сервер обновлен' : 'Сервер добавлен', 'success');
+        closeServerModal();
+        loadServersData(); // Reload the list
+        
+    } catch (error) {
+        console.error('Error saving server:', error);
+        showToast(error.message, 'error');
+    }
+        });
+    }
+});
 
 // Delete server
 async function deleteServer(serverId) {
-    if (!confirm('Are you sure you want to delete this server? This will also remove all associated activity data.')) {
+    if (!confirm('Вы уверены, что хотите удалить этот сервер? Это также удалит все связанные данные активности.')) {
         return;
     }
     

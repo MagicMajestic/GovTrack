@@ -153,8 +153,14 @@ async function deleteReport(reportId) {
     }
 }
 
+// Refresh reports
+function refreshReports() {
+    loadReportsData();
+}
+
 // Make functions available globally
 window.loadReportsData = loadReportsData;
 window.showAddReportModal = showAddReportModal;
 window.editReport = editReport;
 window.deleteReport = deleteReport;
+window.refreshReports = refreshReports;

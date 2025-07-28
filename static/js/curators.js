@@ -2,6 +2,10 @@
 
 let curatorsData = [];
 
+// Global variables
+let currentEditingCuratorId = null;
+let availableServers = [];
+
 // Load curators data
 async function loadCuratorsData() {
     console.log('Loading curators data...');
@@ -12,11 +16,25 @@ async function loadCuratorsData() {
         }
         
         curatorsData = await response.json();
+        await loadAvailableServers();
         updateCuratorsGrid();
         
     } catch (error) {
         console.error('Error loading curators data:', error);
-        showToast('Failed to load curators data', 'error');
+        showToast('Не удалось загрузить данные кураторов', 'error');
+    }
+}
+
+// Load available servers for curator assignment
+async function loadAvailableServers() {
+    try {
+        const response = await fetch('/api/servers');
+        if (response.ok) {
+            availableServers = await response.json();
+        }
+    } catch (error) {
+        console.error('Error loading servers:', error);
+        availableServers = [];
     }
 }
 
@@ -31,10 +49,10 @@ function updateCuratorsGrid() {
         grid.innerHTML = `
             <div class="col-span-full text-center py-12">
                 <i class="fas fa-users text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No Curators Found</h3>
-                <p class="text-gray-500 dark:text-gray-400 mb-6">Start by adding your first curator to the system</p>
+                <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">Кураторы не найдены</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">Начните с добавления первого куратора в систему</p>
                 <button onclick="showAddCuratorModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
-                    <i class="fas fa-plus mr-2"></i>Add First Curator
+                    <i class="fas fa-plus mr-2"></i>Добавить первого куратора
                 </button>
             </div>
         `;
@@ -132,11 +150,11 @@ function getRatingColor(rating) {
 
 // Show add curator modal
 function showAddCuratorModal() {
-    const modal = document.getElementById('addCuratorModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.getElementById('curatorDiscordId').focus();
-    }
+    currentEditingCuratorId = null;
+    document.getElementById('curator-modal-title').textContent = 'Добавить куратора';
+    document.getElementById('curator-form').reset();
+    populateServerCheckboxes();
+    document.getElementById('curator-modal').classList.remove('hidden');
 }
 
 // Hide add curator modal
@@ -190,14 +208,99 @@ async function submitAddCurator(event) {
 }
 
 // Edit curator
-async function editCurator(curatorId) {
-    // TODO: Implement edit functionality
-    showToast('Edit functionality coming soon', 'info');
+function editCurator(curatorId) {
+    const curator = curatorsData.find(c => c.id === curatorId);
+    if (!curator) return;
+    
+    currentEditingCuratorId = curatorId;
+    document.getElementById('curator-modal-title').textContent = 'Редактировать куратора';
+    
+    // Populate form fields
+    document.getElementById('curator-discord-id').value = curator.discord_id;
+    document.getElementById('curator-name').value = curator.name;
+    
+    populateServerCheckboxes(curator.assigned_servers || []);
+    document.getElementById('curator-modal').classList.remove('hidden');
 }
+
+// Close curator modal
+function closeCuratorModal() {
+    document.getElementById('curator-modal').classList.add('hidden');
+    currentEditingCuratorId = null;
+}
+
+// Populate server checkboxes
+function populateServerCheckboxes(selectedServerIds = []) {
+    const container = document.getElementById('server-checkboxes');
+    container.innerHTML = '';
+    
+    if (availableServers.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Нет доступных серверов</p>';
+        return;
+    }
+    
+    availableServers.forEach(server => {
+        const isChecked = selectedServerIds.includes(server.id);
+        const checkbox = document.createElement('label');
+        checkbox.className = 'flex items-center space-x-2 cursor-pointer';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${server.id}" ${isChecked ? 'checked' : ''} class="server-checkbox">
+            <span class="text-sm text-gray-700 dark:text-gray-300">${server.name}</span>
+        `;
+        container.appendChild(checkbox);
+    });
+}
+
+// Handle curator form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const curatorForm = document.getElementById('curator-form');
+    if (curatorForm) {
+        curatorForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get selected server IDs
+    const selectedServers = Array.from(document.querySelectorAll('.server-checkbox:checked'))
+        .map(checkbox => parseInt(checkbox.value));
+    
+    const formData = {
+        discord_id: document.getElementById('curator-discord-id').value,
+        name: document.getElementById('curator-name').value,
+        assigned_servers: selectedServers
+    };
+    
+    try {
+        const url = currentEditingCuratorId ? `/api/curators/${currentEditingCuratorId}` : '/api/curators';
+        const method = currentEditingCuratorId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save curator');
+        }
+        
+        const result = await response.json();
+        showToast(currentEditingCuratorId ? 'Куратор обновлен' : 'Куратор добавлен', 'success');
+        closeCuratorModal();
+        loadCuratorsData(); // Reload the list
+        
+    } catch (error) {
+        console.error('Error saving curator:', error);
+        showToast(error.message, 'error');
+    }
+        });
+    }
+});
 
 // Delete curator
 async function deleteCurator(curatorId) {
-    if (!confirm('Are you sure you want to delete this curator? This action cannot be undone.')) {
+    if (!confirm('Вы уверены, что хотите удалить этого куратора? Это действие нельзя отменить.')) {
         return;
     }
     
@@ -216,7 +319,7 @@ async function deleteCurator(curatorId) {
         
     } catch (error) {
         console.error('Error deleting curator:', error);
-        showToast('Failed to delete curator', 'error');
+        showToast('Не удалось удалить куратора', 'error');
     }
 }
 

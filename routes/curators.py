@@ -94,26 +94,29 @@ def create_curator():
         required_fields = ['discord_id', 'name']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+                return jsonify({'error': f'Отсутствует обязательное поле: {field}'}), 400
         
         # Check if curator with this Discord ID already exists
         existing_curator = Curator.find_by_discord_id(data['discord_id'])
         if existing_curator:
-            return jsonify({'error': 'Curator with this Discord ID already exists'}), 409
+            return jsonify({'error': 'Куратор с таким Discord ID уже существует'}), 409
         
         # Create new curator
         curator = Curator()
         curator.discord_id = str(data['discord_id'])
         curator.name = data['name']
-        curator.factions = data.get('factions', [])
-        curator.curator_type = data.get('curator_type')
-        curator.subdivision = data.get('subdivision')
         curator.total_points = 0
         curator.rating_level = 'Ужасно'
         curator.created_at = datetime.utcnow()
         curator.updated_at = datetime.utcnow()
         
         db.session.add(curator)
+        db.session.flush()  # Get the ID before handling servers
+        
+        # Handle assigned servers
+        if 'assigned_servers' in data:
+            curator.assigned_servers = data['assigned_servers'] if data['assigned_servers'] else []
+        
         db.session.commit()
         
         return jsonify(curator.to_dict()), 201
@@ -133,12 +136,15 @@ def update_curator(curator_id):
         # Update fields if provided
         if 'name' in data:
             curator.name = data['name']
-        if 'factions' in data:
-            curator.factions = data['factions']
+        if 'assigned_servers' in data:
+            # Store server IDs as JSON array
+            curator.assigned_servers = data['assigned_servers'] if data['assigned_servers'] else []
         if 'curator_type' in data:
             curator.curator_type = data['curator_type']
         if 'subdivision' in data:
             curator.subdivision = data['subdivision']
+        
+        curator.updated_at = datetime.utcnow()
         
         db.session.commit()
         
