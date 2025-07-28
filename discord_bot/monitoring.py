@@ -33,17 +33,11 @@ class MessageMonitor:
                 if not server or not server.is_active:
                     return
                 
-                # Find or create curator
-                curator = Curator.find_by_discord_id(str(message.author.id))
+                # Find curator (don't auto-create, only track known curators)
+                curator = Curator.query.filter_by(discord_id=str(message.author.id)).first()
                 if not curator:
-                    # Auto-create curator if they're active in tracked server
-                    curator = Curator(
-                        discord_id=str(message.author.id),
-                        name=message.author.display_name,
-                        curator_type='auto_created'
-                    )
-                    db.session.add(curator)
-                    db.session.flush()  # Get the ID
+                    # Skip tracking for unknown users
+                    return
                 
                 # Check if this is a help request
                 content_lower = message.content.lower()
@@ -79,11 +73,15 @@ class MessageMonitor:
                 
                 db.session.commit()
                 
-                logging.debug(f"Processed message from {curator.name} in {server.name}")
+                logging.info(f"Message tracked: {curator.name} posted in {server.name} - points: {activity.points}")
         
         except Exception as e:
             logging.error(f"Error processing message: {e}")
-            db.session.rollback()
+            try:
+                with app.app_context():
+                    db.session.rollback()
+            except:
+                pass
     
     async def handle_help_request(self, message, server):
         """Handle help request message"""
@@ -99,7 +97,7 @@ class MessageMonitor:
             logging.info(f"Help request detected in {server.name}: {message.content[:100]}")
             
             # Notify curators if role is configured
-            if server.role_tag_id:
+            if server.curator_role_id:
                 await self.notify_curators(message, server)
         
         except Exception as e:
@@ -270,3 +268,49 @@ class MessageMonitor:
             except Exception as e:
                 logging.error(f"Error in cleanup task: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
+    
+    async def process_reaction(self, reaction, user, action):
+        """Process reaction add/remove"""
+        try:
+            with app.app_context():
+                # Find server in database
+                server = DiscordServer.find_by_server_id(str(reaction.message.guild.id))
+                if not server or not server.is_active:
+                    return
+                
+                # Find curator (only track known curators)
+                curator = Curator.query.filter_by(discord_id=str(user.id)).first()
+                if not curator:
+                    return
+                
+                # Only track reaction additions for points
+                if action == 'add':
+                    activity = Activity(
+                        curator_id=curator.id,
+                        server_id=server.id,
+                        type='reaction',
+                        content=f"Reacted with {reaction.emoji}",
+                        points=Config.RATING_POINTS['reaction'],
+                        message_id=str(reaction.message.id),
+                        channel_id=str(reaction.message.channel.id)
+                    )
+                    
+                    db.session.add(activity)
+                    curator.total_points += activity.points
+                    
+                    # Recalculate rating
+                    from utils.rating import calculate_curator_rating
+                    rating_data = calculate_curator_rating(curator.id)
+                    curator.rating_level = rating_data['level']
+                    
+                    db.session.commit()
+                    
+                    logging.info(f"Reaction tracked: {curator.name} reacted with {reaction.emoji} in {server.name}")
+        
+        except Exception as e:
+            logging.error(f"Error processing reaction: {e}")
+            try:
+                with app.app_context():
+                    db.session.rollback()
+            except:
+                pass

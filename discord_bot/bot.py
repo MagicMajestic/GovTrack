@@ -17,12 +17,13 @@ from .notifications import NotificationManager
 # Configure Discord logging
 discord.utils.setup_logging(level=logging.INFO)
 
-# Bot configuration
+# Bot configuration - disable privileged intents that require approval
 intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
 intents.guilds = True
-intents.members = True
+# Disable privileged intents to avoid authorization issues
+# intents.members = True  # This requires approval in Discord Developer Portal
 
 class GovTrackerBot(commands.Bot):
     def __init__(self):
@@ -58,7 +59,7 @@ class GovTrackerBot(commands.Bot):
                     self.tracked_servers[int(server.server_id)] = {
                         'id': server.id,
                         'name': server.name,
-                        'role_tag_id': server.role_tag_id,
+                        'curator_role_id': server.curator_role_id,
                         'is_active': server.is_active
                     }
                 
@@ -72,7 +73,52 @@ class GovTrackerBot(commands.Bot):
         logging.info(f'{self.user} has connected to Discord!')
         logging.info(f'Bot is in {len(self.guilds)} guilds')
         
+        # List tracked servers
+        for guild_id, server_info in self.tracked_servers.items():
+            guild = self.get_guild(guild_id)
+            if guild:
+                logging.info(f"Monitoring server: {guild.name} ({guild_id})")
+            else:
+                logging.warning(f"Bot is not in server {server_info['name']} ({guild_id})")
+        
         # Set bot status
+        await self.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.watching,
+                name=f"{len(self.tracked_servers)} servers"
+            )
+        )
+    
+    async def on_message(self, message):
+        """Handle incoming messages"""
+        # Ignore bot messages
+        if message.author.bot:
+            return
+        
+        # Only process messages from tracked servers
+        if message.guild and message.guild.id in self.tracked_servers:
+            await self.monitor.process_message(message)
+        
+        # Process commands
+        await self.process_commands(message)
+    
+    async def on_reaction_add(self, reaction, user):
+        """Handle reaction additions"""
+        if user.bot:
+            return
+        
+        # Only process reactions from tracked servers
+        if reaction.message.guild and reaction.message.guild.id in self.tracked_servers:
+            await self.monitor.process_reaction(reaction, user, 'add')
+    
+    async def on_reaction_remove(self, reaction, user):
+        """Handle reaction removals"""
+        if user.bot:
+            return
+        
+        # Only process reactions from tracked servers
+        if reaction.message.guild and reaction.message.guild.id in self.tracked_servers:
+            await self.monitor.process_reaction(reaction, user, 'remove')
         activity = discord.Activity(
             type=discord.ActivityType.watching,
             name=f"{len(self.tracked_servers)} servers"

@@ -324,10 +324,138 @@ async function deleteCurator(curatorId) {
 }
 
 // View curator details
-function viewCuratorDetails(curatorId) {
-    // TODO: Implement detailed view
-    showToast('Detailed view coming soon', 'info');
+async function viewCuratorDetails(curatorId) {
+    try {
+        const response = await fetch(`/api/curators/${curatorId}/details`);
+        if (!response.ok) {
+            throw new Error('Failed to load curator details');
+        }
+        
+        const details = await response.json();
+        showCuratorDetailsModal(details);
+        
+    } catch (error) {
+        console.error('Error loading curator details:', error);
+        showToast('Failed to load curator details', 'error');
+    }
 }
+
+// Show curator details modal
+function showCuratorDetailsModal(details) {
+    const curator = details.curator;
+    const activityStats = details.activity_stats || {};
+    const responseStats = details.response_stats || {};
+    const recentActivities = details.recent_activities || [];
+    
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 rounded-t-xl">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                            ${curator.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${curator.name}</h2>
+                            <p class="text-gray-500 dark:text-gray-400">${curator.curator_type || 'Curator'}</p>
+                            <div class="flex items-center space-x-4 mt-2">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${getRatingColor(curator.rating_level)}">
+                                    ${curator.rating_level}
+                                </span>
+                                <span class="text-lg font-bold text-gray-900 dark:text-white">${curator.total_points} pts</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">Total Activities</h3>
+                        <p class="text-3xl font-bold text-blue-700 dark:text-blue-300">${activityStats.total_activities || 0}</p>
+                    </div>
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Messages</h3>
+                        <p class="text-3xl font-bold text-green-700 dark:text-green-300">${activityStats.messages || 0}</p>
+                    </div>
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">Reactions</h3>
+                        <p class="text-3xl font-bold text-purple-700 dark:text-purple-300">${activityStats.reactions || 0}</p>
+                    </div>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">Replies</h3>
+                        <p class="text-3xl font-bold text-yellow-700 dark:text-yellow-300">${activityStats.replies || 0}</p>
+                    </div>
+                    <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Task Verifications</h3>
+                        <p class="text-3xl font-bold text-red-700 dark:text-red-300">${activityStats.task_verifications || 0}</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Avg Response Time</h3>
+                        <p class="text-3xl font-bold text-gray-700 dark:text-gray-300">${responseStats.average_response_time || 0}s</p>
+                    </div>
+                </div>
+                
+                ${details.assigned_servers_details && details.assigned_servers_details.length > 0 ? `
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Assigned Servers</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${details.assigned_servers_details.map(server => `
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                    <h4 class="font-medium text-gray-900 dark:text-white">${server.name}</h4>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Server ID: ${server.server_id}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Status: ${server.is_active ? 'Active' : 'Inactive'}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${recentActivities.length > 0 ? `
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activities</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
+                            <div class="max-h-64 overflow-y-auto">
+                                ${recentActivities.slice(0, 10).map(activity => `
+                                    <div class="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-600 last:border-b-0">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-white capitalize">${activity.type}</span>
+                                            ${activity.server_name ? `<span class="text-xs text-gray-500 dark:text-gray-400 ml-2">in ${activity.server_name}</span>` : ''}
+                                            ${activity.content ? `<p class="text-xs text-gray-600 dark:text-gray-300 mt-1">${activity.content.substring(0, 100)}${activity.content.length > 100 ? '...' : ''}</p>` : ''}
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-sm font-medium text-blue-600 dark:text-blue-400">+${activity.points} pts</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">${new Date(activity.timestamp).toLocaleDateString()}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="text-center py-8">
+                        <i class="fas fa-chart-line text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">No recent activities</p>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// viewCuratorDetails function is implemented above at line 330
 
 // Make functions available globally
 window.loadCuratorsData = loadCuratorsData;

@@ -365,6 +365,7 @@ def list_backups():
         backup_path = os.environ.get('BACKUP_PATH', './backups')
         
         if not os.path.exists(backup_path):
+            os.makedirs(backup_path, exist_ok=True)
             return []
         
         backups = []

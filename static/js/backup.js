@@ -6,7 +6,7 @@ let backupsData = [];
 async function loadBackupData() {
     console.log('Loading backup data...');
     try {
-        const response = await fetch('/api/backup');
+        const response = await fetch('/api/backup/list');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -124,12 +124,12 @@ function updateBackupSettings() {
             
             <div class="grid grid-cols-2 gap-3">
                 <button onclick="createManualBackup()" 
-                        class="bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors text-sm">
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                     <i class="fas fa-plus mr-2"></i>Create Backup
                 </button>
-                <button onclick="cleanupOldBackups()" 
-                        class="bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg transition-colors text-sm">
-                    <i class="fas fa-broom mr-2"></i>Cleanup Old
+                <button onclick="showUploadBackupModal()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-upload mr-2"></i>Upload Backup
                 </button>
             </div>
         </div>

@@ -4,6 +4,7 @@ from app import db
 from models.curator import Curator
 from models.activity import Activity
 from models.response_tracking import ResponseTracking
+from models.discord_server import DiscordServer
 from utils.rating import calculate_curator_rating
 import logging
 from datetime import datetime
@@ -228,3 +229,125 @@ def get_leaderboard():
     except Exception as e:
         logging.error(f"Error getting leaderboard: {e}")
         return jsonify({'error': 'Failed to fetch leaderboard'}), 500
+
+@curators_bp.route('/<int:curator_id>/details', methods=['GET'])
+def get_curator_details(curator_id):
+    """Get comprehensive curator details for the details page"""
+    try:
+        curator = Curator.query.get_or_404(curator_id)
+        
+        # Basic curator info
+        curator_data = curator.to_dict()
+        
+        # Extended activity statistics
+        try:
+            activity_stats = curator.get_activity_stats(days=30)
+            activity_stats_all_time = curator.get_activity_stats(days=None) if hasattr(curator, 'get_activity_stats') else {}
+        except:
+            activity_stats = {'total_activities': 0, 'messages': 0, 'reactions': 0, 'replies': 0, 'task_verifications': 0}
+            activity_stats_all_time = {'total_activities': 0, 'messages': 0, 'reactions': 0, 'replies': 0, 'task_verifications': 0}
+        
+        # Response time statistics  
+        try:
+            response_stats = ResponseTracking.get_curator_response_stats(curator_id, days=30) if hasattr(ResponseTracking, 'get_curator_response_stats') else {}
+        except:
+            response_stats = {'average_response_time': 0, 'total_responses': 0, 'good_responses': 0, 'poor_responses': 0}
+        
+        # Rating calculation and breakdown
+        from utils.rating import calculate_curator_rating
+        rating_data = calculate_curator_rating(curator_id)
+        
+        # Recent activities with details
+        try:
+            recent_activities = Activity.query.filter_by(curator_id=curator_id).order_by(Activity.timestamp.desc()).limit(50).all()
+            recent_activities_data = []
+            for activity in recent_activities:
+                activity_dict = activity.to_dict()
+                # Add server name
+                if hasattr(activity, 'discord_server') and activity.discord_server:
+                    activity_dict['server_name'] = activity.discord_server.name
+                recent_activities_data.append(activity_dict)
+        except:
+            recent_activities_data = []
+        
+        # Monthly performance breakdown
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, extract
+        
+        # Get activities for the last 12 months
+        twelve_months_ago = datetime.utcnow() - timedelta(days=365)
+        monthly_data = db.session.query(
+            extract('year', Activity.timestamp).label('year'),
+            extract('month', Activity.timestamp).label('month'),
+            Activity.type,
+            func.count(Activity.id).label('count'),
+            func.sum(Activity.points).label('points')
+        ).filter(
+            Activity.curator_id == curator_id,
+            Activity.timestamp >= twelve_months_ago
+        ).group_by(
+            extract('year', Activity.timestamp),
+            extract('month', Activity.timestamp),
+            Activity.type
+        ).all()
+        
+        # Organize monthly data
+        monthly_breakdown = {}
+        for data in monthly_data:
+            month_key = f"{int(data.year)}-{int(data.month):02d}"
+            if month_key not in monthly_breakdown:
+                monthly_breakdown[month_key] = {
+                    'messages': 0, 'reactions': 0, 'replies': 0, 
+                    'task_verifications': 0, 'total_points': 0
+                }
+            monthly_breakdown[month_key][f"{data.type}s"] = data.count
+            monthly_breakdown[month_key]['total_points'] += data.points or 0
+        
+        # Server activity breakdown
+        server_activities = db.session.query(
+            Activity.server_id,
+            func.count(Activity.id).label('activity_count'),
+            func.sum(Activity.points).label('total_points')
+        ).filter(
+            Activity.curator_id == curator_id
+        ).group_by(Activity.server_id).all()
+        
+        server_breakdown = []
+        for server_data in server_activities:
+            server = DiscordServer.query.get(server_data.server_id)
+            if server:
+                server_breakdown.append({
+                    'server_id': server.id,
+                    'server_name': server.name,
+                    'activity_count': server_data.activity_count,
+                    'total_points': server_data.total_points or 0
+                })
+        
+        # Assigned servers details
+        assigned_servers_details = []
+        if curator.assigned_servers:
+            for server_id in curator.assigned_servers:
+                try:
+                    server = DiscordServer.query.get(int(server_id))
+                    if server:
+                        assigned_servers_details.append(server.to_dict())
+                except (ValueError, TypeError):
+                    continue
+        
+        details_data = {
+            'curator': curator_data,
+            'activity_stats': activity_stats,
+            'activity_stats_all_time': activity_stats_all_time,
+            'response_stats': response_stats,
+            'rating_data': rating_data,
+            'recent_activities': recent_activities_data,
+            'monthly_breakdown': monthly_breakdown,
+            'server_breakdown': server_breakdown,
+            'assigned_servers_details': assigned_servers_details
+        }
+        
+        return jsonify(details_data)
+        
+    except Exception as e:
+        logging.error(f"Error getting curator details for {curator_id}: {e}")
+        return jsonify({'error': 'Failed to fetch curator details'}), 500

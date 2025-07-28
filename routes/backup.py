@@ -6,7 +6,7 @@ import os
 
 backup_bp = Blueprint('backup', __name__)
 
-@backup_bp.route('', methods=['POST'])
+@backup_bp.route('/create', methods=['POST'])
 def create_backup_endpoint():
     """Create a new backup"""
     try:
@@ -74,17 +74,8 @@ def restore_backup_endpoint():
 def list_backups_endpoint():
     """List available backups"""
     try:
-        # Return sample backup data for now
-        sample_backups = [
-            {
-                'id': 'backup_001',
-                'filename': 'govtracker_backup_2024_01_01.sql',
-                'created_at': '2024-01-01T00:00:00Z',
-                'size': '2.5 MB',
-                'description': 'Автоматическое резервное копирование'
-            }
-        ]
-        return jsonify(sample_backups)
+        backups = list_backups()
+        return jsonify(backups)
         
     except Exception as e:
         logging.error(f"Error listing backups: {e}")
