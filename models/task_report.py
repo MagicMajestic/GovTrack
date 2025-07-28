@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from app import db
+from database import db
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from datetime import datetime
 

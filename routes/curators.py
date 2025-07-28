@@ -24,13 +24,46 @@ def get_curators():
 
 @curators_bp.route('/<int:curator_id>', methods=['GET'])
 def get_curator(curator_id):
-    """Get specific curator details"""
+    """Get specific curator details (fast version)"""
     try:
-        curator = Curator.query.get_or_404(curator_id)
-        return jsonify(curator.to_dict())
+        curator = Curator.query.get(curator_id)
+        if not curator:
+            return jsonify({'error': 'Curator not found'}), 404
+        
+        # Get basic curator data with pre-calculated stats
+        curator_data = curator.to_dict()
+        
+        # Add quick stats without complex calculations
+        from models.activity import Activity
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+        
+        # Get last 7 days of activities for quick preview
+        since = datetime.utcnow() - timedelta(days=7)
+        recent_stats = db.session.query(
+            func.count(Activity.id).label('total_activities'),
+            func.count(Activity.id).filter(Activity.type == 'message').label('messages'),
+            func.count(Activity.id).filter(Activity.type == 'reaction').label('reactions'),
+            func.count(Activity.id).filter(Activity.type == 'reply').label('replies'),
+            func.sum(Activity.points).label('total_points')
+        ).filter(
+            Activity.curator_id == curator_id,
+            Activity.timestamp >= since
+        ).first()
+        
+        curator_data['weekly_stats'] = {
+            'total_activities': recent_stats.total_activities or 0,
+            'messages': recent_stats.messages or 0,
+            'reactions': recent_stats.reactions or 0,
+            'replies': recent_stats.replies or 0,
+            'total_points': recent_stats.total_points or 0
+        }
+        
+        return jsonify(curator_data)
+        
     except Exception as e:
         logging.error(f"Error getting curator {curator_id}: {e}")
-        return jsonify({'error': 'Curator not found'}), 404
+        return jsonify({'error': 'Failed to load curator details'}), 500
 
 @curators_bp.route('/<int:curator_id>/stats', methods=['GET'])
 def get_curator_stats(curator_id):

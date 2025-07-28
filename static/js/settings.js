@@ -10,12 +10,13 @@ async function loadSettingsData() {
         }
         
         const settings = await response.json();
-        updateBotSettings(settings.bot_settings || {});
-        updateRatingSettings(settings.rating_settings || {});
+        updateBotSettings(settings.discord_bot || {});
+        updateRatingSettings(settings.rating_system || {});
+        updateNotificationSettings(settings.notifications || {});
         
     } catch (error) {
         console.error('Error loading settings data:', error);
-        showToast('Failed to load settings data', 'error');
+        showToast('Не удалось загрузить настройки', 'error');
     }
 }
 
@@ -40,29 +41,22 @@ function updateBotSettings(botSettings) {
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monitored Servers</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Максимум серверов</label>
                 <input type="number" value="${botSettings.max_servers || 8}" min="1" max="20" 
                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                        onchange="updateBotSetting('max_servers', this.value)">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Maximum number of servers to monitor</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Максимальное количество серверов для мониторинга</p>
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Response Timeout (seconds)</label>
-                <input type="number" value="${botSettings.response_timeout || 300}" min="30" max="3600" 
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                       onchange="updateBotSetting('response_timeout', this.value)">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Timeout for curator response tracking</p>
-            </div>
-            
+
             <div class="flex items-center justify-between">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Auto Backup</label>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Automatic daily backups</p>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Мониторинг включен</label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Отслеживание активности кураторов</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" ${botSettings.auto_backup ? 'checked' : ''} class="sr-only peer"
-                           onchange="updateBotSetting('auto_backup', this.checked)">
+                    <input type="checkbox" ${botSettings.monitoring_enabled ? 'checked' : ''} class="sr-only peer"
+                           onchange="updateBotSetting('monitoring_enabled', this.checked)">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 </label>
             </div>
@@ -147,49 +141,122 @@ function updateRatingSettings(ratingSettings) {
     `;
 }
 
+// Update notification settings display
+function updateNotificationSettings(notificationSettings) {
+    const container = document.getElementById('notification-settings');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Время до напоминания куратору (секунды)</label>
+                <input type="number" value="${notificationSettings.curator_reminder_time || 300}" min="60" max="3600" 
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                       onchange="updateNotificationSetting('curator_reminder_time', this.value)">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Время ожидания ответа куратора перед напоминанием</p>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Автонапоминание</label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Повторять напоминание через то же время</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" ${notificationSettings.auto_reminder ? 'checked' : ''} class="sr-only peer"
+                           onchange="updateNotificationSetting('auto_reminder', this.checked)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email уведомления</label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Отправка уведомлений на email</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" ${notificationSettings.email_notifications ? 'checked' : ''} class="sr-only peer"
+                           onchange="updateNotificationSetting('email_notifications', this.checked)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+        </div>
+    `;
+}
+
 // Update bot setting
 async function updateBotSetting(key, value) {
     try {
-        const response = await fetch('/api/settings/bot', {
+        const response = await fetch('/api/settings', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ [key]: value })
+            body: JSON.stringify({ 
+                discord_bot: { [key]: value }
+            })
         });
         
         if (!response.ok) {
             throw new Error('Failed to update setting');
         }
         
-        showToast('Setting updated successfully', 'success');
+        showToast('Настройка обновлена', 'success');
         
     } catch (error) {
         console.error('Error updating setting:', error);
-        showToast('Failed to update setting', 'error');
+        showToast('Ошибка при обновлении настройки', 'error');
+    }
+}
+
+// Update notification setting
+async function updateNotificationSetting(key, value) {
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                notifications: { [key]: value }
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update notification setting');
+        }
+        
+        showToast('Настройка уведомлений обновлена', 'success');
+        
+    } catch (error) {
+        console.error('Error updating notification setting:', error);
+        showToast('Ошибка при обновлении настройки уведомлений', 'error');
     }
 }
 
 // Update rating point
 async function updateRatingPoint(type, points) {
     try {
-        const response = await fetch('/api/settings/rating', {
+        const response = await fetch('/api/settings', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ type, points: parseInt(points) })
+            body: JSON.stringify({ 
+                rating_system: { 
+                    points: { [type]: parseInt(points) }
+                }
+            })
         });
         
         if (!response.ok) {
             throw new Error('Failed to update rating points');
         }
         
-        showToast('Rating points updated successfully', 'success');
+        showToast('Очки рейтинга обновлены', 'success');
         
     } catch (error) {
         console.error('Error updating rating points:', error);
-        showToast('Failed to update rating points', 'error');
+        showToast('Ошибка при обновлении очков рейтинга', 'error');
     }
 }
 
@@ -201,5 +268,6 @@ async function saveSettings() {
 // Make functions available globally
 window.loadSettingsData = loadSettingsData;
 window.updateBotSetting = updateBotSetting;
+window.updateNotificationSetting = updateNotificationSetting;
 window.updateRatingPoint = updateRatingPoint;
 window.saveSettings = saveSettings;

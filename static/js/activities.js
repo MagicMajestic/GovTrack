@@ -1,6 +1,7 @@
 // GovTracker2 Python Migration by Replit Agent - Activities Management
 
 let activitiesData = [];
+let activitiesAutoRefreshInterval = null;
 
 // Load activities data
 async function loadActivitiesData() {
@@ -17,6 +18,25 @@ async function loadActivitiesData() {
     } catch (error) {
         console.error('Error loading activities data:', error);
         showToast('Failed to load activities data', 'error');
+    }
+}
+
+// Start auto-refresh for activities
+function startActivitiesAutoRefresh() {
+    if (activitiesAutoRefreshInterval) {
+        clearInterval(activitiesAutoRefreshInterval);
+    }
+    
+    activitiesAutoRefreshInterval = setInterval(() => {
+        loadActivitiesData();
+    }, 30000); // Refresh every 30 seconds
+}
+
+// Stop auto-refresh for activities
+function stopActivitiesAutoRefresh() {
+    if (activitiesAutoRefreshInterval) {
+        clearInterval(activitiesAutoRefreshInterval);
+        activitiesAutoRefreshInterval = null;
     }
 }
 
@@ -118,6 +138,19 @@ function showAddActivityModal() {
     showToast('Activity logging coming soon', 'info');
 }
 
+// Initialize activities section
+function initializeActivitiesSection() {
+    loadActivitiesData();
+    startActivitiesAutoRefresh();
+}
+
+// Clean up activities section
+function cleanupActivitiesSection() {
+    stopActivitiesAutoRefresh();
+}
+
 // Make functions available globally
 window.loadActivitiesData = loadActivitiesData;
+window.initializeActivitiesSection = initializeActivitiesSection;
+window.cleanupActivitiesSection = cleanupActivitiesSection;
 window.showAddActivityModal = showAddActivityModal;

@@ -1,114 +1,111 @@
 import os
 import logging
 from flask import Flask, render_template, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+from database import db
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-class Base(DeclarativeBase):
-    pass
+# Create the app instance directly for Replit compatibility
+app = Flask(__name__)
+app.secret_key = os.environ.get("SESSION_SECRET", "govtracker2-secret-key")
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-db = SQLAlchemy(model_class=Base)
+# Database configuration
+database_url = os.environ.get('DATABASE_URL', 'postgresql://localhost/govtracker2')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-def create_app():
-    app = Flask(__name__)
-    app.secret_key = os.environ.get("SESSION_SECRET", "govtracker2-secret-key")
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+    "connect_args": {"sslmode": "prefer"}
+}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Initialize database
+db.init_app(app)
+
+# Import models to ensure tables are created
+try:
+    from models import curator, activity, discord_server, response_tracking, task_report, user
+    logging.info("Models imported successfully")
+except ImportError as e:
+    logging.warning(f"Could not import models: {e}")
+
+# Register blueprints (with error handling for missing routes)
+try:
+    from routes.dashboard import dashboard_bp
+    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+except ImportError:
+    logging.warning("Dashboard blueprint not found")
     
-    # Database configuration
-    database_url = os.environ.get('DATABASE_URL', 'postgresql://localhost/govtracker2')
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+try:
+    from routes.curators import curators_bp
+    app.register_blueprint(curators_bp, url_prefix='/api/curators')
+except ImportError:
+    logging.warning("Curators blueprint not found")
     
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-    }
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+try:
+    from routes.activities import activities_bp
+    app.register_blueprint(activities_bp, url_prefix='/api/activities')
+except ImportError:
+    logging.warning("Activities blueprint not found")
     
-    # Initialize database
-    db.init_app(app)
+try:
+    from routes.servers import servers_bp
+    app.register_blueprint(servers_bp, url_prefix='/api/servers')
+except ImportError:
+    logging.warning("Servers blueprint not found")
     
-    # Import models to ensure tables are created
-    try:
-        from models import curator, activity, discord_server, response_tracking, task_report, user
-    except ImportError as e:
-        logging.warning(f"Could not import models: {e}")
+try:
+    from routes.task_reports import task_reports_bp
+    app.register_blueprint(task_reports_bp, url_prefix='/api/task-reports')
+except ImportError:
+    logging.warning("Task reports blueprint not found")
     
-    # Register blueprints (with error handling for missing routes)
-    try:
-        from routes.dashboard import dashboard_bp
-        app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
-    except ImportError:
-        logging.warning("Dashboard blueprint not found")
-        
-    try:
-        from routes.curators import curators_bp
-        app.register_blueprint(curators_bp, url_prefix='/api/curators')
-    except ImportError:
-        logging.warning("Curators blueprint not found")
-        
-    try:
-        from routes.activities import activities_bp
-        app.register_blueprint(activities_bp, url_prefix='/api/activities')
-    except ImportError:
-        logging.warning("Activities blueprint not found")
-        
-    try:
-        from routes.servers import servers_bp
-        app.register_blueprint(servers_bp, url_prefix='/api/servers')
-    except ImportError:
-        logging.warning("Servers blueprint not found")
-        
-    try:
-        from routes.task_reports import task_reports_bp
-        app.register_blueprint(task_reports_bp, url_prefix='/api/task-reports')
-    except ImportError:
-        logging.warning("Task reports blueprint not found")
-        
-    try:
-        from routes.settings import settings_bp
-        app.register_blueprint(settings_bp, url_prefix='/api/settings')
-    except ImportError:
-        logging.warning("Settings blueprint not found")
-        
-    try:
-        from routes.backup import backup_bp
-        app.register_blueprint(backup_bp, url_prefix='/api/backup')
-    except ImportError:
-        logging.warning("Backup blueprint not found")
+try:
+    from routes.settings import settings_bp
+    app.register_blueprint(settings_bp, url_prefix='/api/settings')
+except ImportError:
+    logging.warning("Settings blueprint not found")
     
-    # Static file serving
-    @app.route('/static/<path:filename>')
-    def serve_static(filename):
-        return send_from_directory('static', filename)
-    
-    # Main route to serve React app
-    @app.route('/')
-    @app.route('/<path:path>')
-    def serve_react_app(path=''):
-        try:
-            return render_template('index.html')
-        except:
-            return send_from_directory('static', 'index.html')
-    
-    # Initialize scheduler (with error handling)
+try:
+    from routes.backup import backup_bp
+    app.register_blueprint(backup_bp, url_prefix='/api/backup')
+except ImportError:
+    logging.warning("Backup blueprint not found")
+
+# Static file serving
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
+
+# Main route to serve React app
+@app.route('/')
+@app.route('/<path:path>')
+def serve_react_app(path=''):
     try:
-        from scheduler import init_scheduler
-        init_scheduler(app)
-    except ImportError:
-        logging.warning("Scheduler not available")
-    
-    with app.app_context():
+        return render_template('index.html')
+    except:
+        return send_from_directory('static', 'index.html')
+
+# Initialize scheduler (with error handling)
+try:
+    from scheduler import init_scheduler
+    init_scheduler(app)
+except ImportError:
+    logging.warning("Scheduler not available")
+
+# Create tables within app context
+with app.app_context():
+    try:
         db.create_all()
-    
-    return app
-
-app = create_app()
+        logging.info("Database tables created successfully")
+    except Exception as e:
+        logging.error(f"Failed to create database tables: {e}")
 
 # Initialize Discord bot in background (with error handling)
 try:

@@ -49,7 +49,9 @@ DEFAULT_SETTINGS = {
     'notifications': {
         'email_notifications': False,
         'webhook_url': '',
-        'notification_types': ['error', 'backup', 'system']
+        'notification_types': ['error', 'backup', 'system'],
+        'curator_reminder_time': 300,  # seconds until reminder
+        'auto_reminder': True  # repeat reminder after same time interval
     },
     'database': {
         'type': 'postgresql',

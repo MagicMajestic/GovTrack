@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from app import db
+from database import db
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from datetime import datetime
 
@@ -52,9 +52,17 @@ class DiscordServer(db.Model):
     def get_curator_count(self):
         """Get number of curators assigned to this server"""
         try:
-            from models.curator import Curator
-            return Curator.query.filter(Curator.assigned_servers.any(id=self.id)).count()
-        except:
+            from models.activity import Activity
+            from sqlalchemy import func
+            
+            # Count distinct curators with activities on this server
+            with db.session.no_autoflush:
+                count = db.session.query(func.count(Activity.curator_id.distinct())).filter(
+                    Activity.server_id == self.id
+                ).scalar()
+                
+                return count if count is not None else 0
+        except Exception as e:
             return 0
 
     def get_average_response_time(self, days=30):
@@ -64,14 +72,15 @@ class DiscordServer(db.Model):
             from sqlalchemy import func
             from datetime import datetime, timedelta
             
-            since = datetime.utcnow() - timedelta(days=days)
-            result = db.session.query(func.avg(ResponseTracking.response_time)).filter(
-                ResponseTracking.server_id == self.id,
-                ResponseTracking.created_at >= since,
-                ResponseTracking.response_time.isnot(None)
-            ).scalar()
-            
-            return int(result) if result else 0
+            with db.session.no_autoflush:
+                since = datetime.utcnow() - timedelta(days=days)
+                result = db.session.query(func.avg(ResponseTracking.response_time)).filter(
+                    ResponseTracking.server_id == self.id,
+                    ResponseTracking.created_at >= since,
+                    ResponseTracking.response_time.isnot(None)
+                ).scalar()
+                
+                return int(result) if result else 0
         except:
             return 0
 
@@ -81,28 +90,33 @@ class DiscordServer(db.Model):
             from models.activity import Activity
             from datetime import datetime, timedelta
             
-            since = datetime.utcnow() - timedelta(days=days)
-            return Activity.query.filter(
-                Activity.server_id == self.id,
-                Activity.activity_type == 'reaction',
-                Activity.created_at >= since
-            ).count()
+            with db.session.no_autoflush:
+                since = datetime.utcnow() - timedelta(days=days)
+                return Activity.query.filter(
+                    Activity.server_id == self.id,
+                    Activity.type == 'reaction',
+                    Activity.timestamp >= since
+                ).count()
         except:
             return 0
     
     def get_activity_count(self, days=30):
         """Get activity count for this server"""
-        from models.activity import Activity
-        from datetime import datetime, timedelta
-        
-        if days:
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
-            return Activity.query.filter(
-                Activity.server_id == self.id,
-                Activity.timestamp >= cutoff_date
-            ).count()
-        else:
-            return Activity.query.filter_by(server_id=self.id).count()
+        try:
+            from models.activity import Activity
+            from datetime import datetime, timedelta
+            
+            with db.session.no_autoflush:
+                if days:
+                    cutoff_date = datetime.utcnow() - timedelta(days=days)
+                    return Activity.query.filter(
+                        Activity.server_id == self.id,
+                        Activity.timestamp >= cutoff_date
+                    ).count()
+                else:
+                    return Activity.query.filter_by(server_id=self.id).count()
+        except:
+            return 0
     
     def get_active_curators(self):
         """Get curators active on this server"""

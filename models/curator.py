@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from app import db
+from database import db
 from sqlalchemy import Column, Integer, String, JSON, DateTime, Text
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -32,9 +32,9 @@ class Curator(db.Model):
     def __repr__(self):
         return f'<Curator {self.name} ({self.discord_id})>'
     
-    def to_dict(self):
+    def to_dict(self, include_stats=True):
         """Convert curator to dictionary for JSON responses"""
-        return {
+        data = {
             'id': self.id,
             'discord_id': self.discord_id,
             'name': self.name,
@@ -43,10 +43,37 @@ class Curator(db.Model):
             'subdivision': self.subdivision,
             'total_points': self.total_points,
             'rating_level': self.rating_level,
-            'average_response_time': 0,  # Будет рассчитано в другом месте
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+        
+        if include_stats:
+            # Get activity statistics
+            stats = self.get_activity_stats(days=30)
+            data.update({
+                'total_activities': stats['total_activities'],
+                'messages': stats['messages'],
+                'reactions': stats['reactions'],
+                'replies': stats['replies'],
+                'task_verifications': stats['task_verifications']
+            })
+            
+            # Get average response time
+            from models.response_tracking import ResponseTracking
+            avg_response = ResponseTracking.get_curator_avg_response_time(self.id)
+            data['average_response_time'] = avg_response or 0
+        else:
+            # Default values when stats not included
+            data.update({
+                'total_activities': 0,
+                'messages': 0,
+                'reactions': 0,
+                'replies': 0,
+                'task_verifications': 0,
+                'average_response_time': 0
+            })
+            
+        return data
     
     def get_activity_stats(self, days=30):
         """Get activity statistics for the curator"""

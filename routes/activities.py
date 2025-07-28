@@ -10,6 +10,36 @@ from datetime import datetime
 
 activities_bp = Blueprint('activities', __name__)
 
+@activities_bp.route('', methods=['GET'])
+def get_activities():
+    """Get all activities (main endpoint)"""
+    try:
+        limit = request.args.get('limit', 100, type=int)
+        server_id = request.args.get('server_id', type=int)
+        curator_id = request.args.get('curator_id', type=int)
+        activity_type = request.args.get('type')
+        
+        query = Activity.query
+        
+        # Apply filters
+        if server_id:
+            query = query.filter_by(server_id=server_id)
+        
+        if curator_id:
+            query = query.filter_by(curator_id=curator_id)
+        
+        if activity_type:
+            query = query.filter_by(type=activity_type)
+        
+        activities = query.order_by(Activity.timestamp.desc()).limit(limit).all()
+        activities_data = [activity.to_dict() for activity in activities]
+        
+        return jsonify(activities_data)
+        
+    except Exception as e:
+        logging.error(f"Error getting activities: {e}")
+        return jsonify({'error': 'Failed to fetch activities'}), 500
+
 @activities_bp.route('/recent', methods=['GET'])
 def get_recent_activities():
     """Get recent activities with optional filtering"""

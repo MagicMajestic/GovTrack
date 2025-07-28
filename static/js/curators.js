@@ -6,6 +6,9 @@ let curatorsData = [];
 let currentEditingCuratorId = null;
 let availableServers = [];
 
+// Auto-refresh interval (30 seconds)
+let autoRefreshInterval = null;
+
 // Load curators data
 async function loadCuratorsData() {
     console.log('Loading curators data...');
@@ -22,6 +25,25 @@ async function loadCuratorsData() {
     } catch (error) {
         console.error('Error loading curators data:', error);
         showToast('Не удалось загрузить данные кураторов', 'error');
+    }
+}
+
+// Start auto-refresh
+function startAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    autoRefreshInterval = setInterval(() => {
+        loadCuratorsData();
+    }, 30000); // Refresh every 30 seconds
+}
+
+// Stop auto-refresh
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
     }
 }
 
@@ -323,32 +345,51 @@ async function deleteCurator(curatorId) {
     }
 }
 
-// View curator details
+// View curator details (fast version using existing data + quick API call)
 async function viewCuratorDetails(curatorId) {
     try {
-        const response = await fetch(`/api/curators/${curatorId}/details`);
+        // Get the curator from current data first for instant modal display
+        const curator = curatorsData.find(c => c.id === curatorId);
+        if (!curator) {
+            throw new Error('Curator not found');
+        }
+        
+        // Show modal immediately with existing data
+        showCuratorDetailsModal({ curator, loading: true });
+        
+        // Then fetch fresh details in background
+        const response = await fetch(`/api/curators/${curatorId}`);
         if (!response.ok) {
             throw new Error('Failed to load curator details');
         }
         
         const details = await response.json();
-        showCuratorDetailsModal(details);
+        
+        // Update modal with fresh data
+        showCuratorDetailsModal({ curator: details, loading: false });
         
     } catch (error) {
         console.error('Error loading curator details:', error);
-        showToast('Failed to load curator details', 'error');
+        showToast('Не удалось загрузить детали куратора', 'error');
     }
 }
 
 // Show curator details modal
 function showCuratorDetailsModal(details) {
     const curator = details.curator;
-    const activityStats = details.activity_stats || {};
-    const responseStats = details.response_stats || {};
-    const recentActivities = details.recent_activities || [];
+    const isLoading = details.loading;
+    
+    // Use weekly_stats if available, otherwise use main stats
+    const stats = curator.weekly_stats || curator;
+    
+    // Remove existing modal if present
+    const existingModal = document.querySelector('.curator-details-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
     
     const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.className = 'curator-details-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
     modal.onclick = (e) => {
         if (e.target === modal) modal.remove();
     };
@@ -363,12 +404,13 @@ function showCuratorDetailsModal(details) {
                         </div>
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${curator.name}</h2>
-                            <p class="text-gray-500 dark:text-gray-400">${curator.curator_type || 'Curator'}</p>
+                            <p class="text-gray-500 dark:text-gray-400">${curator.curator_type || 'Куратор'}</p>
                             <div class="flex items-center space-x-4 mt-2">
                                 <span class="px-3 py-1 rounded-full text-sm font-medium ${getRatingColor(curator.rating_level)}">
                                     ${curator.rating_level}
                                 </span>
-                                <span class="text-lg font-bold text-gray-900 dark:text-white">${curator.total_points} pts</span>
+                                <span class="text-lg font-bold text-gray-900 dark:text-white">${curator.total_points || 0} очков</span>
+                                ${isLoading ? '<div class="animate-pulse text-sm text-gray-500">Загрузка...</div>' : ''}
                             </div>
                         </div>
                     </div>
@@ -381,26 +423,81 @@ function showCuratorDetailsModal(details) {
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">Total Activities</h3>
-                        <p class="text-3xl font-bold text-blue-700 dark:text-blue-300">${activityStats.total_activities || 0}</p>
+                        <h3 class="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">Всего активностей</h3>
+                        <p class="text-3xl font-bold text-blue-700 dark:text-blue-300">${stats.total_activities || curator.total_activities || 0}</p>
+                        <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">За последнюю неделю</p>
                     </div>
                     <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Messages</h3>
-                        <p class="text-3xl font-bold text-green-700 dark:text-green-300">${activityStats.messages || 0}</p>
+                        <h3 class="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Сообщения</h3>
+                        <p class="text-3xl font-bold text-green-700 dark:text-green-300">${stats.messages || curator.messages || 0}</p>
+                        <p class="text-xs text-green-500 dark:text-green-400 mt-1">+${(stats.messages || curator.messages || 0) * 3} очков</p>
                     </div>
                     <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">Reactions</h3>
-                        <p class="text-3xl font-bold text-purple-700 dark:text-purple-300">${activityStats.reactions || 0}</p>
+                        <h3 class="text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">Реакции</h3>
+                        <p class="text-3xl font-bold text-purple-700 dark:text-purple-300">${stats.reactions || curator.reactions || 0}</p>
+                        <p class="text-xs text-purple-500 dark:text-purple-400 mt-1">+${(stats.reactions || curator.reactions || 0) * 1} очков</p>
                     </div>
                     <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">Replies</h3>
-                        <p class="text-3xl font-bold text-yellow-700 dark:text-yellow-300">${activityStats.replies || 0}</p>
+                        <h3 class="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">Ответы</h3>
+                        <p class="text-3xl font-bold text-yellow-700 dark:text-yellow-300">${stats.replies || curator.replies || 0}</p>
+                        <p class="text-xs text-yellow-500 dark:text-yellow-400 mt-1">+${(stats.replies || curator.replies || 0) * 2} очков</p>
                     </div>
                     <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Task Verifications</h3>
-                        <p class="text-3xl font-bold text-red-700 dark:text-red-300">${activityStats.task_verifications || 0}</p>
+                        <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Проверки задач</h3>
+                        <p class="text-3xl font-bold text-red-700 dark:text-red-300">${curator.task_verifications || 0}</p>
+                        <p class="text-xs text-red-500 dark:text-red-400 mt-1">+${(curator.task_verifications || 0) * 5} очков</p>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Среднее время ответа</h3>
+                        <p class="text-3xl font-bold text-gray-700 dark:text-gray-300">${curator.average_response_time || 0}с</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">На запросы помощи</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Информация о кураторе</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Discord ID:</span>
+                                <span class="text-gray-900 dark:text-white font-mono">${curator.discord_id}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Создан:</span>
+                                <span class="text-gray-900 dark:text-white">${new Date(curator.created_at).toLocaleDateString('ru-RU')}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Последнее обновление:</span>
+                                <span class="text-gray-900 dark:text-white">${new Date(curator.updated_at).toLocaleDateString('ru-RU')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Прогресс рейтинга</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 dark:text-gray-400">Текущий рейтинг:</span>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${getRatingColor(curator.rating_level)}">
+                                    ${curator.rating_level}
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${Math.min((curator.total_points || 0) / 50 * 100, 100)}%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <span>0</span>
+                                <span>20 (Нормально)</span>
+                                <span>35 (Хорошо)</span>
+                                <span>50+ (Великолепно)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+    document.body.appendChild(modal);
                         <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Avg Response Time</h3>
                         <p class="text-3xl font-bold text-gray-700 dark:text-gray-300">${responseStats.average_response_time || 0}s</p>
                     </div>
@@ -457,6 +554,17 @@ function showCuratorDetailsModal(details) {
 
 // viewCuratorDetails function is implemented above at line 330
 
+// Initialize auto-refresh when curators section is loaded
+function initializeCuratorsSection() {
+    loadCuratorsData();
+    startAutoRefresh();
+}
+
+// Clean up when leaving curators section
+function cleanupCuratorsSection() {
+    stopAutoRefresh();
+}
+
 // Make functions available globally
 window.loadCuratorsData = loadCuratorsData;
 window.showAddCuratorModal = showAddCuratorModal;
@@ -465,3 +573,5 @@ window.submitAddCurator = submitAddCurator;
 window.editCurator = editCurator;
 window.deleteCurator = deleteCurator;
 window.viewCuratorDetails = viewCuratorDetails;
+window.initializeCuratorsSection = initializeCuratorsSection;
+window.cleanupCuratorsSection = cleanupCuratorsSection;

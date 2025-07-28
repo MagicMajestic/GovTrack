@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from app import db
+from database import db
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime

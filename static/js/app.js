@@ -67,8 +67,24 @@ function showSection(sectionName) {
     
     currentSection = sectionName;
     
-    // Load section-specific data
+    // Load section-specific data and handle auto-refresh
     loadSectionData(sectionName);
+    
+    // Stop auto-refresh for previous sections
+    if (window.cleanupCuratorsSection && currentSection === 'curators') {
+        window.cleanupCuratorsSection();
+    }
+    if (window.cleanupActivitiesSection && currentSection === 'activities') {
+        window.cleanupActivitiesSection();
+    }
+    
+    // Start auto-refresh for new section
+    if (sectionName === 'curators' && window.initializeCuratorsSection) {
+        window.initializeCuratorsSection();
+    }
+    if (sectionName === 'activities' && window.initializeActivitiesSection) {
+        window.initializeActivitiesSection();
+    }
 }
 
 // Data loading

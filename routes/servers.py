@@ -12,9 +12,63 @@ servers_bp = Blueprint('servers', __name__)
 def get_servers():
     """Get list of all Discord servers"""
     try:
+        # Use a separate session to avoid transaction conflicts
         servers = DiscordServer.query.all()
-        servers_data = [server.to_dict() for server in servers]
+        servers_data = []
+        
+        for server in servers:
+            try:
+                # Get basic server data with safer statistics calculation
+                server_dict = {
+                    'id': server.id,
+                    'server_id': server.server_id,
+                    'name': server.name,
+                    'curator_role_id': server.curator_role_id,
+                    'notification_channel_id': server.notification_channel_id,
+                    'tasks_channel_id': server.tasks_channel_id,
+                    'is_active': server.is_active,
+                    'created_at': server.created_at.isoformat() if server.created_at else None,
+                    'updated_at': server.updated_at.isoformat() if server.updated_at else None,
+                    'activity_count': 0,
+                    'curator_count': 0,
+                    'avg_response_time': 0,
+                    'reactions_count': 0
+                }
+                
+                # Try to get statistics, but don't fail if they error
+                try:
+                    server_dict['activity_count'] = server.get_activity_count()
+                except:
+                    pass
+                    
+                try:
+                    server_dict['curator_count'] = server.get_curator_count()
+                except:
+                    pass
+                    
+                try:
+                    server_dict['reactions_count'] = server.get_reactions_count()
+                except:
+                    pass
+                
+                servers_data.append(server_dict)
+                
+            except Exception as e:
+                logging.warning(f"Error processing server {server.id}: {e}")
+                # Add basic server info even if stats fail
+                servers_data.append({
+                    'id': server.id,
+                    'server_id': server.server_id,
+                    'name': server.name,
+                    'is_active': server.is_active,
+                    'activity_count': 0,
+                    'curator_count': 0,
+                    'avg_response_time': 0,
+                    'reactions_count': 0
+                })
+                
         return jsonify(servers_data)
+        
     except Exception as e:
         logging.error(f"Error getting servers: {e}")
         return jsonify({'error': 'Failed to fetch servers'}), 500

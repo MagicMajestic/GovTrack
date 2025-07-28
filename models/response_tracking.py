@@ -1,5 +1,5 @@
 # GovTracker2 Python Migration by Replit Agent
-from app import db
+from database import db
 from sqlalchemy import Column, Integer, DateTime, String, ForeignKey
 from datetime import datetime
 
@@ -107,6 +107,24 @@ class ResponseTracking(db.Model):
                 distribution['average'] += 1
         
         return distribution
+    
+    @classmethod
+    def get_curator_avg_response_time(cls, curator_id, days=30):
+        """Get average response time for a specific curator"""
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+        
+        if days:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            query = cls.query.filter(
+                cls.curator_id == curator_id,
+                cls.mention_timestamp >= cutoff_date
+            )
+        else:
+            query = cls.query.filter_by(curator_id=curator_id)
+        
+        result = query.with_entities(func.avg(cls.response_time_seconds)).scalar()
+        return int(result) if result else 0
     
     @classmethod
     def get_curator_response_stats(cls, curator_id, days=30):
