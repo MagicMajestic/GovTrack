@@ -11,13 +11,23 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (July 28, 2025)
 
 ✅ **Migration to Replit Environment Completed**
-- Fixed circular import issues by creating separate database.py module
-- Resolved PostgreSQL connection and SSL configuration problems
-- Successfully created all database tables (curators, discord_servers, activities, response_tracking, task_reports, users)
-- Application is now running properly on Replit with all APIs functional
-- Fixed database initialization to work within Flask application context
-- Discord bot now successfully connected and monitoring servers
-- Curator activity tracking system is operational
+- Migrated from Replit Agent to standard Replit environment
+- Set up PostgreSQL database with proper connectivity
+- Fixed Flask application configuration for Replit hosting
+- Resolved JavaScript syntax errors in frontend components
+- Discord bot successfully connected and operational
+- All database tables created and functional
+- Web interface fully working with navigation and data loading
+- Background scheduler and automated tasks running properly
+
+✅ **Discord Bot Functionality Fixed**
+- Fixed help request detection to work with any user (not just curators)
+- Added support for role mention detection (@куратор)
+- Implemented 300-second delayed notifications for unhandled requests
+- Fixed response time tracking and database recording
+- Corrected SQLAlchemy model initialization issues
+- Real-time activity tracking now working properly
+- Curator rating updates happen immediately after activities
 
 ## Migration Requirements Addressed
 

@@ -31,6 +31,10 @@ class ResponseTracking(db.Model):
     def __repr__(self):
         return f'<ResponseTracking {self.response_time_seconds}s by curator {self.curator_id}>'
     
+    # Relationships
+    curator = db.relationship('Curator', backref='response_trackings')
+    discord_server = db.relationship('DiscordServer', backref='response_trackings')
+    
     def to_dict(self):
         """Convert response tracking to dictionary for JSON responses"""
         return {
@@ -44,8 +48,8 @@ class ResponseTracking(db.Model):
             'response_message_id': self.response_message_id,
             'channel_id': self.channel_id,
             'trigger_keywords': self.trigger_keywords.split(',') if self.trigger_keywords else [],
-            'curator_name': self.curator.name if self.curator else None,
-            'server_name': self.discord_server.name if self.discord_server else None,
+            'curator_name': getattr(self.curator, 'name', None),
+            'server_name': getattr(self.discord_server, 'name', None),
             'response_quality': self.get_response_quality()
         }
     

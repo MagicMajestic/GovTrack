@@ -26,6 +26,8 @@ def get_servers():
                     'curator_role_id': server.curator_role_id,
                     'notification_channel_id': server.notification_channel_id,
                     'tasks_channel_id': server.tasks_channel_id,
+                    'reminder_interval_seconds': server.reminder_interval_seconds or 300,
+                    'auto_reminder_enabled': server.auto_reminder_enabled if server.auto_reminder_enabled is not None else True,
                     'is_active': server.is_active,
                     'created_at': server.created_at.isoformat() if server.created_at else None,
                     'updated_at': server.updated_at.isoformat() if server.updated_at else None,
@@ -107,6 +109,8 @@ def create_server():
         server.curator_role_id = data.get('curator_role_id')
         server.notification_channel_id = data.get('notification_channel_id')
         server.tasks_channel_id = data.get('tasks_channel_id')
+        server.reminder_interval_seconds = data.get('reminder_interval_seconds', 300)
+        server.auto_reminder_enabled = data.get('auto_reminder_enabled', True)
         server.is_active = data.get('is_active', True)
         server.created_at = datetime.utcnow()
         server.updated_at = datetime.utcnow()
@@ -137,6 +141,10 @@ def update_server(server_id):
             server.notification_channel_id = data['notification_channel_id']
         if 'tasks_channel_id' in data:
             server.tasks_channel_id = data['tasks_channel_id']
+        if 'reminder_interval_seconds' in data:
+            server.reminder_interval_seconds = data['reminder_interval_seconds']
+        if 'auto_reminder_enabled' in data:
+            server.auto_reminder_enabled = data['auto_reminder_enabled']
         if 'is_active' in data:
             server.is_active = data['is_active']
         

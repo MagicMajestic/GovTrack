@@ -67,9 +67,11 @@ class MessageMonitor:
                 activity.channel_id = str(message.channel.id)
                 
                 db.session.add(activity)
+                
+                # Update curator points
                 curator.total_points += activity.points
                 
-                # Update curator rating
+                # Recalculate rating
                 from utils.rating import calculate_curator_rating
                 rating_data = calculate_curator_rating(curator.id)
                 curator.rating_level = rating_data['level']
@@ -80,10 +82,14 @@ class MessageMonitor:
         
         except Exception as e:
             logging.error(f"Error processing message: {e}")
-            db.session.rollback()
+            try:
+                with app.app_context():
+                    db.session.rollback()
+            except:
+                pass
     
     async def handle_help_request(self, message, server):
-        """Handle detected help request"""
+        """Handle help request message"""
         try:
             message_id = str(message.id)
             
@@ -136,6 +142,8 @@ class MessageMonitor:
                 
                 db.session.add(response_tracking)
                 
+                # Don't record reply activity separately - it's already tracked as response
+                
                 # Remove from pending responses and cancel notifications
                 del self.pending_responses[original_message_id]
                 if original_message_id in self.notification_tasks:
@@ -186,7 +194,7 @@ class MessageMonitor:
                         response_time = datetime.utcnow() - pending['timestamp']
                         response_seconds = int(response_time.total_seconds())
                         
-                        # Record response tracking for reaction
+                        # Record response tracking
                         response_tracking = ResponseTracking()
                         response_tracking.curator_id = curator.id
                         response_tracking.server_id = server.id
@@ -200,11 +208,8 @@ class MessageMonitor:
                         
                         db.session.add(response_tracking)
                         
-                        # Remove from pending responses and cancel notifications
+                        # Remove from pending responses FIRST to stop notifications
                         del self.pending_responses[message_id]
-                        if message_id in self.notification_tasks:
-                            self.notification_tasks[message_id].cancel()
-                            del self.notification_tasks[message_id]
                         
                         # Update curator rating
                         from utils.rating import calculate_curator_rating
@@ -251,12 +256,8 @@ class MessageMonitor:
     async def process_message_delete(self, message):
         """Process message deletions"""
         # Remove from pending responses if it was a help request
-        message_id = str(message.id)
-        if message_id in self.pending_responses:
-            del self.pending_responses[message_id]
-            if message_id in self.notification_tasks:
-                self.notification_tasks[message_id].cancel()
-                del self.notification_tasks[message_id]
+        if str(message.id) in self.pending_responses:
+            del self.pending_responses[str(message.id)]
             logging.debug(f"Removed deleted message from pending responses")
     
     async def notify_curators(self, message, server):
@@ -342,9 +343,6 @@ class MessageMonitor:
                 
                 for message_id in expired_responses:
                     del self.pending_responses[message_id]
-                    if message_id in self.notification_tasks:
-                        self.notification_tasks[message_id].cancel()
-                        del self.notification_tasks[message_id]
                 
                 if expired_responses:
                     logging.info(f"Cleaned up {len(expired_responses)} expired pending responses")
@@ -355,3 +353,87 @@ class MessageMonitor:
             except Exception as e:
                 logging.error(f"Error in cleanup task: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
+    
+    async def process_reaction(self, reaction, user, action):
+        """Process reaction add/remove"""
+        try:
+            with app.app_context():
+                # Find server in database
+                server = DiscordServer.find_by_server_id(str(reaction.message.guild.id))
+                if not server or not server.is_active:
+                    return
+                
+                # Find curator (only track known curators)
+                curator = Curator.query.filter_by(discord_id=str(user.id)).first()
+                if not curator:
+                    return
+                
+                # Only track reaction additions for points
+                if action == 'add':
+                    # Check if this reaction is on a help request
+                    message_id = str(reaction.message.id)
+                    is_help_response = message_id in self.pending_responses
+                    
+                    if is_help_response:
+                        # This is a reaction to a help request - record as response
+                        pending = self.pending_responses[message_id]
+                        response_time = datetime.utcnow() - pending['timestamp']
+                        response_seconds = int(response_time.total_seconds())
+                        
+                        # Record response tracking
+                        response_tracking = ResponseTracking()
+                        response_tracking.curator_id = curator.id
+                        response_tracking.server_id = server.id
+                        response_tracking.mention_timestamp = pending['timestamp']
+                        response_tracking.response_timestamp = datetime.utcnow()
+                        response_tracking.response_time_seconds = response_seconds
+                        response_tracking.mention_message_id = message_id
+                        response_tracking.response_message_id = f"reaction_{reaction.emoji}"
+                        response_tracking.channel_id = str(reaction.message.channel.id)
+                        response_tracking.trigger_keywords = ','.join(self.keywords)
+                        
+                        db.session.add(response_tracking)
+                        
+                        # Remove from pending responses FIRST to stop notifications
+                        del self.pending_responses[message_id]
+                        
+                        # Update curator rating
+                        from utils.rating import calculate_curator_rating
+                        rating_data = calculate_curator_rating(curator.id)
+                        curator.rating_level = rating_data['level']
+                        
+                        db.session.commit()
+                        
+                        logging.info(f"Reaction tracked: {curator.name} reacted with {reaction.emoji} in {server.name}")
+                        logging.info(f"Response tracked: {curator.name} responded in {response_seconds}s")
+                        
+                        # Don't record this as general reaction activity - it's already a response
+                        return
+                    
+                    # Record general reaction activity only if it's not a help response
+                    activity = Activity()
+                    activity.curator_id = curator.id
+                    activity.server_id = server.id
+                    activity.type = 'reaction'
+                    activity.content = f"Reacted with {reaction.emoji}"
+                    activity.points = Config.RATING_POINTS['reaction']
+                    activity.message_id = str(reaction.message.id)
+                    activity.channel_id = str(reaction.message.channel.id)
+                    
+                    db.session.add(activity)
+                    curator.total_points += activity.points
+                    
+                    # Recalculate rating
+                    from utils.rating import calculate_curator_rating
+                    rating_data = calculate_curator_rating(curator.id)
+                    curator.rating_level = rating_data['level']
+                    
+                    db.session.commit()
+        
+        except Exception as e:
+            logging.error(f"Error processing reaction: {e}")
+            try:
+                with app.app_context():
+                    db.session.rollback()
+            except:
+                pass

@@ -18,6 +18,10 @@ class DiscordServer(db.Model):
     notification_channel_id = Column(String(255), nullable=True)  # Канал для уведомлений
     tasks_channel_id = Column(String(255), nullable=True)  # Канал с тасками
     
+    # Reminder settings
+    reminder_interval_seconds = Column(Integer, default=300)  # Интервал напоминания в секундах (по умолчанию 5 минут)
+    auto_reminder_enabled = Column(Boolean, default=True)  # Включено ли автонапоминание
+    
     # Server status
     is_active = Column(Boolean, default=True, index=True)
     
@@ -40,6 +44,8 @@ class DiscordServer(db.Model):
             'curator_role_id': self.curator_role_id,
             'notification_channel_id': self.notification_channel_id,
             'tasks_channel_id': self.tasks_channel_id,
+            'reminder_interval_seconds': self.reminder_interval_seconds,
+            'auto_reminder_enabled': self.auto_reminder_enabled,
             'is_active': self.is_active,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,

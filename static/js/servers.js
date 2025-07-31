@@ -154,6 +154,8 @@ function editServer(serverId) {
     document.getElementById('curator-role-id').value = server.curator_role_id || '';
     document.getElementById('notification-channel-id').value = server.notification_channel_id || '';
     document.getElementById('tasks-channel-id').value = server.tasks_channel_id || '';
+    document.getElementById('reminder-interval-seconds').value = server.reminder_interval_seconds || 300;
+    document.getElementById('auto-reminder-enabled').checked = server.auto_reminder_enabled !== false;
     document.getElementById('server-active').checked = server.is_active;
     
     document.getElementById('server-modal').classList.remove('hidden');
@@ -178,6 +180,8 @@ document.addEventListener('DOMContentLoaded', function() {
         curator_role_id: document.getElementById('curator-role-id').value,
         notification_channel_id: document.getElementById('notification-channel-id').value,
         tasks_channel_id: document.getElementById('tasks-channel-id').value,
+        reminder_interval_seconds: parseInt(document.getElementById('reminder-interval-seconds').value) || 300,
+        auto_reminder_enabled: document.getElementById('auto-reminder-enabled').checked,
         is_active: document.getElementById('server-active').checked
     };
     

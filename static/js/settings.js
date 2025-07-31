@@ -150,9 +150,9 @@ function updateNotificationSettings(notificationSettings) {
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Время до напоминания куратору (секунды)</label>
-                <input type="number" value="${notificationSettings.curator_reminder_time || 300}" min="60" max="3600" 
+                <input type="number" value="${notificationSettings.curator_reminder_time || 300}" min="5" max="3600" 
                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                       onchange="updateNotificationSetting('curator_reminder_time', this.value)">
+                       onchange="updateGlobalReminderTime(this.value)">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Время ожидания ответа куратора перед напоминанием</p>
             </div>
             
@@ -163,7 +163,7 @@ function updateNotificationSettings(notificationSettings) {
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" ${notificationSettings.auto_reminder ? 'checked' : ''} class="sr-only peer"
-                           onchange="updateNotificationSetting('auto_reminder', this.checked)">
+                           onchange="updateGlobalAutoReminder(this.checked)">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                 </label>
             </div>
@@ -265,9 +265,57 @@ async function saveSettings() {
     showToast('Settings saved successfully', 'success');
 }
 
+// Update global reminder time for all servers
+async function updateGlobalReminderTime(seconds) {
+    try {
+        const response = await fetch('/api/servers');
+        const servers = await response.json();
+        
+        // Update all servers
+        for (const server of servers) {
+            await fetch(`/api/servers/${server.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reminder_interval_seconds: parseInt(seconds) })
+            });
+        }
+        
+        showToast('Время напоминания обновлено для всех серверов', 'success');
+        
+    } catch (error) {
+        console.error('Error updating reminder time:', error);
+        showToast('Ошибка при обновлении времени напоминания', 'error');
+    }
+}
+
+// Update global auto-reminder setting for all servers
+async function updateGlobalAutoReminder(enabled) {
+    try {
+        const response = await fetch('/api/servers');
+        const servers = await response.json();
+        
+        // Update all servers
+        for (const server of servers) {
+            await fetch(`/api/servers/${server.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auto_reminder_enabled: enabled })
+            });
+        }
+        
+        showToast('Настройка автонапоминаний обновлена для всех серверов', 'success');
+        
+    } catch (error) {
+        console.error('Error updating auto-reminder:', error);
+        showToast('Ошибка при обновлении настройки автонапоминаний', 'error');
+    }
+}
+
 // Make functions available globally
 window.loadSettingsData = loadSettingsData;
 window.updateBotSetting = updateBotSetting;
 window.updateNotificationSetting = updateNotificationSetting;
 window.updateRatingPoint = updateRatingPoint;
+window.updateGlobalReminderTime = updateGlobalReminderTime;
+window.updateGlobalAutoReminder = updateGlobalAutoReminder;
 window.saveSettings = saveSettings;

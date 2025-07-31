@@ -119,10 +119,6 @@ class GovTrackerBot(commands.Bot):
         # Only process reactions from tracked servers
         if reaction.message.guild and reaction.message.guild.id in self.tracked_servers:
             await self.monitor.process_reaction(reaction, user, 'remove')
-        activity = discord.Activity(
-            type=discord.ActivityType.watching,
-            name=f"{len(self.tracked_servers)} servers"
-        )
         await self.change_presence(activity=activity)
     
     async def on_guild_join(self, guild):
